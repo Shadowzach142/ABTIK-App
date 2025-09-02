@@ -1,0 +1,356 @@
+/* Overlay & modal shell */
+.modal-search {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+  border: 1px solid #eef2f7;
+  padding: 8px;
+  border-radius: 10px;
+}
+
+.modal-search input {
+  border: none;
+  outline: none;
+  flex: 1;
+  font: inherit;
+    padding: 0.25rem; /* optional: reduce vertical space */
+
+}
+
+.dm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.dm-btn-ghost {
+  border: 1px solid #eef2f7;
+  background: #fff;
+}
+
+.dm-btn-primary {
+  background: #0ea5e9;
+  color: #fff;
+}
+
+.dm-btn-success {
+  background: #10b981;
+  color: #fff;
+}
+
+.dm-btn-neutral {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+/* Content container */
+.dm-content {
+  padding: 16px;
+  max-height: 72vh;
+  overflow-y: auto;
+}
+
+/* General text */
+.dm-text-muted {
+  color: #64748b;
+}
+
+/* Grid & Cards */
+.dm-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.dm-card {
+  border: 1px solid #eef2f7;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.dm-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fafafa;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.dm-card-left {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.dm-avatar-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #eef2f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dm-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.dm-card-name {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.dm-card-sub {
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* Expanded panel */
+.dm-expanded {
+  padding: 12px;
+}
+
+.dm-toprow {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.dm-avatar-wrap {
+  width: 120px;
+}
+
+.dm-avatar-rel {
+  position: relative;
+}
+
+.dm-avatar-lg {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.dm-upload-ctrl {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  display: flex;
+  gap: 8px;
+}
+
+.dm-upload-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid #eef2f7;
+  cursor: pointer;
+}
+
+.dm-flex1 {
+  flex: 1;
+}
+
+.dm-row {
+  display: flex;
+  gap: 12px;
+}
+
+.mb-8 {
+  margin-bottom: 8px;
+}
+
+/* Field component */
+.dm-field {
+  display: grid;
+  gap: 4px;
+}
+
+.dm-field-label {
+  font-size: 12px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dm-field-value {
+  font-size: 14px;
+  color: #0f172a;
+}
+
+/* Edit mode */
+.dm-edit-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.dm-input {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #eef2f7;
+  width: 100%;
+  font: inherit;
+}
+
+.flex1 {
+  flex: 1;
+}
+
+.dm-preview {
+  margin-top: 6px;
+}
+
+.dm-preview-img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-top: 6px;
+}
+
+/* Actions */
+.dm-actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+/* Sections */
+.dm-section {
+  margin-top: 12px;
+}
+
+.dm-section-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+/* Records (accordion) */
+.dm-records-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.dm-accordion {
+  border: 1px solid #eef2f7;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.dm-accordion-toggle {
+  width: 100%;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fafafa;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.dm-record-head {
+  font-weight: 600;
+}
+
+.dm-record-head-muted {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.dm-record-head-date {
+  font-size: 14px;
+}
+
+.dm-accordion-body {
+  padding: 12px;
+  background: #fff;
+}
+
+.dm-detail-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.dm-summary {
+  margin-top: 8px;
+  padding: 8px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.dm-image-wrap {
+  margin-top: 8px;
+}
+
+.dm-record-img {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+/* Hospitals */
+.dm-hosp-list {
+  display: grid;
+  gap: 10px;
+}
+
+.dm-hosp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #e6edf6;
+  background: #fff;
+}
+
+.dm-hosp-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dm-iconbox {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #eef6fb;
+}
+
+.dm-hosp-name {
+  font-size: 15px;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.dm-request-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  color: #f97316;
+  cursor: pointer;
+  font-weight: 600;
+}

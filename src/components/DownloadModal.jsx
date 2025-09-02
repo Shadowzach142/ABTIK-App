@@ -1,4 +1,7 @@
 // src/components/DownloadModal.jsx
+import { Client, Databases, Storage } from "appwrite";
+// import "../styles/downloadModal.css";
+import "../styles/global.css";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   X,
@@ -18,7 +21,6 @@ import {
   FileText,
   Lock,
 } from "lucide-react";
-import { Client, Databases, Storage } from "appwrite";
 
 /* ---------- Appwrite setup (use your env vars) ---------- */
 const ENDPOINT = import.meta.env.VITE_APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1";
@@ -48,12 +50,12 @@ const cleanInteger = (raw) => {
 };
 
 const Field = ({ icon, label, value }) => (
-  <div style={{ display: "grid", gap: 4 }}>
-    <div style={{ fontSize: 12, color: "#64748b", display: "flex", alignItems: "center", gap: 6 }}>
+  <div className="dm-field">
+    <div className="dm-field-label">
       {icon}
       {label}
     </div>
-    <div style={{ fontSize: 14, color: "#0f172a" }}>{value ?? "N/A"}</div>
+    <div className="dm-field-value">{value ?? "N/A"}</div>
   </div>
 );
 
@@ -215,7 +217,9 @@ const DownloadModal = ({ setShowDownloadModal }) => {
       console.log("Updated patient doc (profile):", updated);
       setPatients((prev) => prev.map((p) => (p.$id === updated.$id ? updated : p)));
       setSelectedPatient((prev) => (prev && prev.$id === updated.$id ? updated : prev));
-      setEditedPatient((prev) => (prev && prev.$id === updated.$id ? updated : { ...(prev || {}), profile: uploadResult.viewUrl, profilePreview: preview }));
+      setEditedPatient((prev) =>
+        prev && prev.$id === updated.$id ? updated : { ...(prev || {}), profile: uploadResult.viewUrl, profilePreview: preview }
+      );
     } catch (err) {
       console.error("Error updating patient profile attribute:", err);
       alert("Failed to save profile to patient document. See console.");
@@ -276,57 +280,57 @@ const DownloadModal = ({ setShowDownloadModal }) => {
   };
 
   const topContent = useMemo(() => {
-    if (!searchQuery.trim()) return <p style={{ color: "#64748b" }}>Type a name to search patients…</p>;
+    if (!searchQuery.trim()) return <p className="dm-text-muted">Type a name to search patients…</p>;
     if (loadingPatients) return <p>Searching…</p>;
     if (!loadingPatients && patients.length === 0) return <p>No patient found.</p>;
     return null;
   }, [searchQuery, loadingPatients, patients]);
 
-  // hospital row styles (as before)
-  const hospitalRowStyle = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "12px 16px",
-    borderRadius: 8,
-    border: "1px solid #E6EDF6",
-    background: "#fff",
-  };
-  const hospitalLeftStyle = { display: "flex", alignItems: "center", gap: 12 };
-  const iconBoxStyle = { width: 36, height: 36, borderRadius: 8, background: "#F8FAFC", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #EEF6FB" };
-  const requestBtnStyle = { display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", border: "none", color: "#f97316", cursor: "pointer", fontWeight: 600 };
+  // hospital row styles (as before) now via CSS classes
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(2,6,23,0.5)", display: "flex", justifyContent: "center", alignItems: "center", padding: 16, zIndex: 1000 }}>
-      <div style={{ width: "min(980px,100%)", background: "#fff", borderRadius: 12, overflow: "hidden", boxShadow: "0 10px 30px rgba(2,6,23,0.12)" }}>
+    <div className="modal-overlay">
+      <div className="modal">
         {/* header */}
-        <div style={{ display: "flex", gap: 12, alignItems: "center", padding: 12, borderBottom: "1px solid #eef2f7" }}>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, border: "1px solid #eef2f7", padding: 8, borderRadius: 10 }}>
-            <Search size={18} />
-            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search patient by name..." style={{ border: "none", outline: "none", flex: 1 }} />
-          </div>
-          <button onClick={() => setShowDownloadModal(false)} style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #eef2f7", background: "#fff", cursor: "pointer" }}>
-            <X size={16} /> Close
+        <div className="modal-header">
+          <h2 className="modal-title">Patient Records</h2>
+                    <button onClick={() => setShowDownloadModal(false)} className="btn-close">
+            <X size={24} />
           </button>
+        </div>
+        <div className="modal-body">
+        <div className="modal-search">
+          <Search size={18} />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search patient by name..."
+          />
         </div>
 
         {/* content */}
-        <div style={{ padding: 16, maxHeight: "72vh", overflowY: "auto" }}>
+        <div className="dm-content">
           {topContent}
 
           {patients.length > 0 && (
-            <div style={{ display: "grid", gap: 12 }}>
+            <div className="dm-grid">
               {patients.map((p) => (
-                <div key={p.$id} style={{ border: "1px solid #eef2f7", borderRadius: 10, overflow: "hidden" }}>
+                <div key={p.$id} className="dm-card">
                   {/* patient header */}
-                  <div onClick={() => handleTogglePatient(p)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa", padding: 12, cursor: "pointer" }}>
-                    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                      <div style={{ width: 44, height: 44, borderRadius: 8, background: "#eef2f7", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {p.profile ? <img src={p.profile} alt="profile" style={{ width: 40, height: 40, borderRadius: 6, objectFit: "cover" }} /> : <User size={20} />}
+                  <div onClick={() => handleTogglePatient(p)} className="dm-card-header">
+                    <div className="dm-card-left">
+                      <div className="dm-avatar-box">
+                        {p.profile ? (
+                          <img src={p.profile} alt="profile" className="dm-avatar" />
+                        ) : (
+                          <User size={20} />
+                        )}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 700, color: "#0f172a" }}>{p.name}</div>
-                        <div style={{ color: "#64748b", fontSize: 13 }}>{p.place || "—"} • Last: {p.lastvisited || "—"}</div>
+                        <div className="dm-card-name">{p.name}</div>
+                        <div className="dm-card-sub">
+                          {p.place || "—"} • Last: {p.lastvisited || "—"}
+                        </div>
                       </div>
                     </div>
                     <div>{expandedId === p.$id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</div>
@@ -334,18 +338,34 @@ const DownloadModal = ({ setShowDownloadModal }) => {
 
                   {/* expanded */}
                   {expandedId === p.$id && (
-                    <div style={{ padding: 12 }}>
+                    <div className="dm-expanded">
                       {/* profile top */}
-                      <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 12 }}>
-                        <div style={{ width: 120 }}>
-                          <div style={{ position: "relative" }}>
-                            <img src={selectedPatient && selectedPatient.$id === p.$id && editedPatient?.profilePreview ? editedPatient.profilePreview : (p.profile || "/avatar.png")} alt="avatar" style={{ width: 120, height: 120, objectFit: "cover", borderRadius: 10 }} />
+                      <div className="dm-toprow">
+                        <div className="dm-avatar-wrap">
+                          <div className="dm-avatar-rel">
+                            <img
+                              src={
+                                selectedPatient &&
+                                selectedPatient.$id === p.$id &&
+                                editedPatient?.profilePreview
+                                  ? editedPatient.profilePreview
+                                  : p.profile || "/avatar.png"
+                              }
+                              alt="avatar"
+                              className="dm-avatar-lg"
+                            />
                             {/* Upload control visible when editing this patient */}
                             {isEditing && selectedPatient?.$id === p.$id && (
-                              <div style={{ position: "absolute", left: 8, bottom: 8, display: "flex", gap: 8 }}>
-                                <label style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#fff", padding: "6px 8px", borderRadius: 8, border: "1px solid #eef2f7", cursor: "pointer" }}>
+                              <div className="dm-upload-ctrl">
+                                <label className="dm-upload-label">
                                   <Camera size={14} />
-                                  <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleProfileFileSelect(e.target.files)} disabled={uploadingProfile} />
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleProfileFileSelect(e.target.files)}
+                                    disabled={uploadingProfile}
+                                    style={{ display: "none" }}
+                                  />
                                   {uploadingProfile ? "Uploading..." : "Upload"}
                                 </label>
                               </div>
@@ -353,57 +373,103 @@ const DownloadModal = ({ setShowDownloadModal }) => {
                           </div>
                         </div>
 
-                        <div style={{ flex: 1 }}>
+                        <div className="dm-flex1">
                           {!isEditing || selectedPatient?.$id !== p.$id ? (
                             <>
-                              <div style={{ display: "flex", gap: 12, marginBottom: 8 }}>
+                              <div className="dm-row mb-8">
                                 <Field icon={<Calendar size={14} />} label="DOB" value={p.dateofbirth} />
                                 <Field icon={<Droplets size={14} />} label="Blood Type" value={p.bloodtype} />
                                 <Field icon={<Phone size={14} />} label="Phone" value={p.phonenumber} />
                               </div>
 
-                              <div style={{ display: "flex", gap: 12 }}>
+                              <div className="dm-row">
                                 <Field icon={<Mail size={14} />} label="Email" value={p.email} />
                                 <Field icon={<MapPin size={14} />} label="Place" value={p.place} />
                                 <Field label="Gender" value={p.gender} />
                               </div>
                             </>
                           ) : (
-                            <div style={{ display: "grid", gap: 8 }}>
-                              <input value={editedPatient?.name || ""} onChange={(e) => handleInputChange("name", e.target.value)} placeholder="Full name" style={{ padding: 8, borderRadius: 8, border: "1px solid #eef2f7" }} />
-                              <div style={{ display: "flex", gap: 8 }}>
-                                <input value={editedPatient?.dateofbirth || ""} onChange={(e) => handleInputChange("dateofbirth", e.target.value)} placeholder="DOB" style={{ flex: 1, padding: 8, borderRadius: 8, border: "1px solid #eef2f7" }} />
-                                <input value={editedPatient?.gender || ""} onChange={(e) => handleInputChange("gender", e.target.value)} placeholder="Gender" style={{ flex: 1, padding: 8, borderRadius: 8, border: "1px solid #eef2f7" }} />
+                            <div className="dm-edit-grid">
+                              <input
+                                value={editedPatient?.name || ""}
+                                onChange={(e) => handleInputChange("name", e.target.value)}
+                                placeholder="Full name"
+                                className="dm-input"
+                              />
+                              <div className="dm-row">
+                                <input
+                                  value={editedPatient?.dateofbirth || ""}
+                                  onChange={(e) => handleInputChange("dateofbirth", e.target.value)}
+                                  placeholder="DOB"
+                                  className="dm-input flex1"
+                                />
+                                <input
+                                  value={editedPatient?.gender || ""}
+                                  onChange={(e) => handleInputChange("gender", e.target.value)}
+                                  placeholder="Gender"
+                                  className="dm-input flex1"
+                                />
                               </div>
-                              <div style={{ display: "flex", gap: 8 }}>
-                                <input value={editedPatient?.phonenumber || ""} onChange={(e) => handleInputChange("phonenumber", e.target.value)} placeholder="Phone (digits only)" style={{ flex: 1, padding: 8, borderRadius: 8, border: "1px solid #eef2f7" }} />
-                                <input value={editedPatient?.email || ""} onChange={(e) => handleInputChange("email", e.target.value)} placeholder="Email" style={{ flex: 1, padding: 8, borderRadius: 8, border: "1px solid #eef2f7" }} />
+                              <div className="dm-row">
+                                <input
+                                  value={editedPatient?.phonenumber || ""}
+                                  onChange={(e) => handleInputChange("phonenumber", e.target.value)}
+                                  placeholder="Phone (digits only)"
+                                  className="dm-input flex1"
+                                />
+                                <input
+                                  value={editedPatient?.email || ""}
+                                  onChange={(e) => handleInputChange("email", e.target.value)}
+                                  placeholder="Email"
+                                  className="dm-input flex1"
+                                />
                               </div>
-                              <input value={editedPatient?.place || ""} onChange={(e) => handleInputChange("place", e.target.value)} placeholder="Place" style={{ padding: 8, borderRadius: 8, border: "1px solid #eef2f7" }} />
-                              <div style={{ display: "flex", gap: 8 }}>
-                                <input value={editedPatient?.bloodtype || ""} onChange={(e) => handleInputChange("bloodtype", e.target.value)} placeholder="Blood Type" style={{ flex: 1, padding: 8, borderRadius: 8, border: "1px solid #eef2f7" }} />
-                                <input value={editedPatient?.lastvisited || ""} onChange={(e) => handleInputChange("lastvisited", e.target.value)} placeholder="Last visited" style={{ flex: 1, padding: 8, borderRadius: 8, border: "1px solid #eef2f7" }} />
+                              <input
+                                value={editedPatient?.place || ""}
+                                onChange={(e) => handleInputChange("place", e.target.value)}
+                                placeholder="Place"
+                                className="dm-input"
+                              />
+                              <div className="dm-row">
+                                <input
+                                  value={editedPatient?.bloodtype || ""}
+                                  onChange={(e) => handleInputChange("bloodtype", e.target.value)}
+                                  placeholder="Blood Type"
+                                  className="dm-input flex1"
+                                />
+                                <input
+                                  value={editedPatient?.lastvisited || ""}
+                                  onChange={(e) => handleInputChange("lastvisited", e.target.value)}
+                                  placeholder="Last visited"
+                                  className="dm-input flex1"
+                                />
                               </div>
                               {editedPatient?.profilePreview && (
-                                <div style={{ marginTop: 6 }}>
-                                  <div style={{ fontSize: 12, color: "#64748b" }}>Profile preview</div>
-                                  <img src={editedPatient.profilePreview} alt="preview" style={{ width: 100, height: 100, objectFit: "cover", borderRadius: 8, marginTop: 6 }} />
+                                <div className="dm-preview">
+                                  <div className="dm-field-label">Profile preview</div>
+                                  <img src={editedPatient.profilePreview} alt="preview" className="dm-preview-img" />
                                 </div>
                               )}
                             </div>
                           )}
 
-                          <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+                          <div className="dm-actions">
                             {!isEditing || selectedPatient?.$id !== p.$id ? (
-                              <button onClick={() => handleStartEdit(p)} style={{ display: "inline-flex", gap: 8, alignItems: "center", padding: "8px 12px", borderRadius: 8, background: "#0ea5e9", color: "#fff", border: "none", cursor: "pointer" }}>
+                              <button onClick={() => handleStartEdit(p)} className="dm-btn dm-btn-primary">
                                 <Edit size={14} /> Edit Profile
                               </button>
                             ) : (
                               <>
-                                <button onClick={handleSave} style={{ display: "inline-flex", gap: 8, alignItems: "center", padding: "8px 12px", borderRadius: 8, background: "#10b981", color: "#fff", border: "none", cursor: "pointer" }}>
+                                <button onClick={handleSave} className="dm-btn dm-btn-success">
                                   <Save size={14} /> Save
                                 </button>
-                                <button onClick={() => { setIsEditing(false); setEditedPatient(null); }} style={{ padding: "8px 12px", borderRadius: 8, background: "#f1f5f9", border: "1px solid #e2e8f0", cursor: "pointer" }}>
+                                <button
+                                  onClick={() => {
+                                    setIsEditing(false);
+                                    setEditedPatient(null);
+                                  }}
+                                  className="dm-btn dm-btn-neutral"
+                                >
                                   Cancel
                                 </button>
                               </>
@@ -413,78 +479,82 @@ const DownloadModal = ({ setShowDownloadModal }) => {
                       </div>
 
                       {/* records accordion */}
-                      <div style={{ marginTop: 6 }}>
-                        <div style={{ fontWeight: 700, marginBottom: 8 }}>Visit / Records</div>
+                      <div className="dm-section">
+                        <div className="dm-section-title">Visit / Records</div>
                         {recordsLoading[p.$id] && <p>Loading records…</p>}
-                        {!recordsLoading[p.$id] && (recordsByPatient[p.$id]?.length ? (
-                          <div style={{ display: "grid", gap: 8 }}>
-                            {recordsByPatient[p.$id].map((r) => {
-                              const isOpen = !!recordExpanded[r.$id];
-                              return (
-                                <div key={r.$id} style={{ border: "1px solid #eef2f7", borderRadius: 8, overflow: "hidden" }}>
-                                  <button onClick={() => toggleRecord(r.$id)} style={{ width: "100%", padding: 10, display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fafafa", border: "none", cursor: "pointer" }}>
-                                    <div style={{ fontWeight: 600 }}>
-                                      <div style={{ color: "#64748b", fontSize: 12 }}>Record Date</div>
-                                      <div style={{ fontSize: 14 }}>{fmtDateOnly(r.recorddate)}</div>
-                                    </div>
-                                    <div>{isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</div>
-                                  </button>
-
-                                  {isOpen && (
-                                    <div style={{ padding: 12, background: "#fff" }}>
-                                      <div style={{ display: "grid", gap: 8 }}>
-                                        <div>
-                                          <div style={{ fontSize: 12, color: "#64748b" }}>Symptom 1</div>
-                                          <div style={{ fontSize: 14, color: "#0f172a" }}>{r.symptom1 || "—"}</div>
-                                        </div>
-                                        <div>
-                                          <div style={{ fontSize: 12, color: "#64748b" }}>Symptom 2</div>
-                                          <div style={{ fontSize: 14, color: "#0f172a" }}>{r.symptom2 || "—"}</div>
-                                        </div>
-                                        <div>
-                                          <div style={{ fontSize: 12, color: "#64748b" }}>Symptom 3</div>
-                                          <div style={{ fontSize: 14, color: "#0f172a" }}>{r.symptom3 || "—"}</div>
-                                        </div>
-
-                                        {r.summary && (
-                                          <div style={{ marginTop: 8, padding: 8, background: "#f8fafc", borderRadius: 8 }}>
-                                            <div style={{ fontSize: 12, color: "#64748b" }}>Summary</div>
-                                            <div style={{ fontSize: 14, color: "#0f172a" }}>{r.summary}</div>
-                                          </div>
-                                        )}
-
-                                        {r.image && (
-                                          <div style={{ marginTop: 8 }}>
-                                            <a href={r.image} target="_blank" rel="noreferrer">
-                                              <img src={r.image} alt="record" style={{ width: "100%", maxHeight: 240, objectFit: "cover", borderRadius: 8 }} />
-                                            </a>
-                                          </div>
-                                        )}
+                        {!recordsLoading[p.$id] &&
+                          (recordsByPatient[p.$id]?.length ? (
+                            <div className="dm-records-grid">
+                              {recordsByPatient[p.$id].map((r) => {
+                                const isOpen = !!recordExpanded[r.$id];
+                                return (
+                                  <div key={r.$id} className="dm-accordion">
+                                    <button
+                                      onClick={() => toggleRecord(r.$id)}
+                                      className="dm-accordion-toggle"
+                                    >
+                                      <div className="dm-record-head">
+                                        <div className="dm-record-head-muted">Record Date</div>
+                                        <div className="dm-record-head-date">{fmtDateOnly(r.recorddate)}</div>
                                       </div>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <p>No records found for this patient.</p>
-                        ))}
+                                      <div>{isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</div>
+                                    </button>
+
+                                    {isOpen && (
+                                      <div className="dm-accordion-body">
+                                        <div className="dm-detail-grid">
+                                          <div>
+                                            <div className="dm-field-label">Symptom 1</div>
+                                            <div className="dm-field-value">{r.symptom1 || "—"}</div>
+                                          </div>
+                                          <div>
+                                            <div className="dm-field-label">Symptom 2</div>
+                                            <div className="dm-field-value">{r.symptom2 || "—"}</div>
+                                          </div>
+                                          <div>
+                                            <div className="dm-field-label">Symptom 3</div>
+                                            <div className="dm-field-value">{r.symptom3 || "—"}</div>
+                                          </div>
+
+                                          {r.summary && (
+                                            <div className="dm-summary">
+                                              <div className="dm-field-label">Summary</div>
+                                              <div className="dm-field-value">{r.summary}</div>
+                                            </div>
+                                          )}
+
+                                          {r.image && (
+                                            <div className="dm-image-wrap">
+                                              <a href={r.image} target="_blank" rel="noreferrer">
+                                                <img src={r.image} alt="record" className="dm-record-img" />
+                                              </a>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p>No records found for this patient.</p>
+                          ))}
                       </div>
 
                       {/* Hospital UI */}
-                      <div style={{ marginTop: 12 }}>
-                        <div style={{ fontWeight: 700, marginBottom: 8 }}>Hospital Records</div>
-                        <div style={{ display: "grid", gap: 10 }}>
+                      <div className="dm-section">
+                        <div className="dm-section-title">Hospital Records</div>
+                        <div className="dm-hosp-list">
                           {STATIC_HOSPITALS.map((h) => (
-                            <div key={h} style={hospitalRowStyle}>
-                              <div style={hospitalLeftStyle}>
-                                <div style={iconBoxStyle}>
+                            <div key={h} className="dm-hosp-row">
+                              <div className="dm-hosp-left">
+                                <div className="dm-iconbox">
                                   <FileText size={18} color="#0f172a" />
                                 </div>
-                                <div style={{ fontSize: 15, color: "#0f172a", fontWeight: 600 }}>{h}</div>
+                                <div className="dm-hosp-name">{h}</div>
                               </div>
-                              <button style={requestBtnStyle} onClick={(e) => e.stopPropagation()}>
+                              <button className="dm-request-btn" onClick={(e) => e.stopPropagation()}>
                                 <Lock size={16} />
                                 Request Access
                               </button>
@@ -498,6 +568,7 @@ const DownloadModal = ({ setShowDownloadModal }) => {
               ))}
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>

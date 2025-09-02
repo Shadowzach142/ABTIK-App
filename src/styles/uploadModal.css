@@ -1,0 +1,135 @@
+
+/* ================================
+   UPLOAD MODAL STYLES
+   ================================ */
+
+/* OCR preview */
+.ocr-preview {
+  border-radius: 8px;
+  padding: 12px;
+  background: #fbfdff;
+  border: 1px solid #eef6fb;
+}
+
+/* extracted data container */
+.extracted {
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #eef2f7;
+  display: grid;
+  gap: 8px;
+}
+
+/* labels */
+.form-label {
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* input / textarea */
+.form-input,
+.form-textarea {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #eef2f7;
+  width: 100%;
+}
+
+.form-textarea {
+  resize: vertical;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* footer buttons */
+.footer-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+/* file drop box */
+
+.upload-area {
+  border: 2px dashed #d1d5db;
+  border-radius: 0.5rem;
+  padding: 32px;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-wrap: nowrap; /* ✅ allow contents to wrap */
+}
+
+.upload-icon {
+  width: 3rem;
+  height: 3rem;
+  color: #9ca3af;
+  margin: 0 auto 1rem;
+}
+
+.file-box:hover {
+  background: #e8ebefa9;
+}
+
+.hidden-input {
+  display: none;
+}
+
+.file-box svg {
+  flex-shrink: 0;
+  align-items: center;   /* ✅ icon stays fixed size, no shrinking */
+}
+
+.file-name {
+  font-weight: 600;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  flex: 1;        /* ✅ take remaining space */
+  min-width: 0;
+  /* max-width: 100%; */
+}
+
+.file-hint {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.action-row {
+  display: flex;
+  gap: 8px;
+}
+
+
+
+
+.ocr-text {
+  margin-top: 8px;
+  color: #0f172a;
+}
+
+.two-col {
+  display: flex;
+  gap: 8px;
+}
+
+.detected-digits {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.symptom-input {
+  margin-bottom: 6px;
+}
+
+.uploaded-img {
+  width: 100%;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+

@@ -1,9 +1,13 @@
 import React, { useState } from "react";
-import "./styles.css";
-import LandingPage from "./Pages/LandingPage.jsx";
+import LandingPage from "./pages/LandingPage.jsx";
 import AnalyticsPage from "./pages/AnalyticsPage.jsx";
 import UploadModal from "./components/UploadModal.jsx";
 import DownloadModal from "./components/DownloadModal.jsx";
+import "./styles/global.css";
+import "./styles/uploadModal.css";
+import "./styles/downloadModal.css";
+import "./styles/landingPage.css";
+import "./styles/analyticsPage.css";
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState("landing");

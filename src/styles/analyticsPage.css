@@ -1,0 +1,468 @@
+
+/* ================================
+   ANALYTICS PAGE STYLES
+   ================================ */
+.analytics-page {
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+.analytics-mobile-header {
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem;
+  display: none;
+}
+
+.analytics-mobile-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.analytics-mobile-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.menu-button {
+  padding: 0.5rem;
+  color: #4b5563;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.menu-button:hover {
+  color: #1f2937;
+}
+
+.analytics-layout {
+  display: flex;
+}
+
+.analytics-sidebar {
+  width: 20rem;
+  background: white;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border-right: 1px solid #e5e7eb;
+  overflow-y: auto;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 40;
+  display: none;
+}
+
+.analytics-sidebar.open {
+  display: block;
+}
+
+.sidebar-content {
+  padding: 1.5rem;
+}
+
+.sidebar-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+  display: none;
+}
+
+.disease-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.disease-item {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid #e5e7eb;
+}
+
+.disease-item:hover {
+  background-color: #f9fafb;
+}
+
+.disease-item.selected {
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.disease-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.disease-details h3 {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+}
+
+.disease-cases {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.disease-indicators {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.trend-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.trend-up {
+  color: #ef4444;
+}
+
+.trend-down {
+  color: #10b981;
+}
+
+.disease-color {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+}
+
+.analytics-main {
+  flex: 1;
+  margin-left: 0;
+}
+
+.analytics-header {
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  display: none;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.analytics-title {
+  font-size: 1.875rem;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.back-button {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  color: #1d4ed8;
+}
+
+.analytics-content {
+  padding: 1.5rem;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.map-section {
+  grid-column: span 1;
+}
+
+.map-container {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  height: 24rem;
+}
+
+.map-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.map-display {
+  position: relative;
+  height: 100%;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.map-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.map-icon {
+  width: 4rem;
+  height: 4rem;
+  color: #3b82f6;
+  margin-bottom: 1rem;
+}
+
+.map-text {
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.map-subtext {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.location-marker {
+  position: absolute;
+  background-color: #ef4444;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.location-marker:hover {
+  transform: scale(1.1);
+  z-index: 10;
+}
+
+.charts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.chart-container {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+}
+
+.chart-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.chart-display {
+  height: 12rem;
+  background: linear-gradient(to top, #eff6ff, transparent);
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.chart-bar {
+  background-color: #3b82f6;
+  border-top-left-radius: 0.25rem;
+  border-top-right-radius: 0.25rem;
+  flex: 1;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.chart-bar:hover {
+  opacity: 0.8;
+}
+
+.chart-labels {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.location-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.location-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.location-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.location-name {
+  color: #374151;
+}
+
+.location-rank {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+}
+
+.location-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.progress-bar {
+  width: 4rem;
+  height: 0.5rem;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: #ef4444;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.location-count {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4b5563;
+  width: 2rem;
+  text-align: right;
+}
+
+/* Enhanced Analytics Styles */
+.disease-summary {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.summary-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1rem;
+}
+
+.summary-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.stat-value {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.stat-value.trending-up {
+  color: #ef4444;
+}
+
+.stat-value.trending-down {
+  color: #10b981;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: 16rem;
+  overflow-y: auto;
+}
+
+.activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.3s ease;
+}
+
+.activity-item:hover {
+  background-color: #f9fafb;
+}
+
+.activity-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  margin-top: 0.375rem;
+  flex-shrink: 0;
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-text {
+  font-size: 0.875rem;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+.activity-time {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
