@@ -1,6 +1,6 @@
 // src/components/UploadModal.jsx
 import React, { useEffect, useState } from "react";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Check, AlertTriangle } from "lucide-react";
 import "../styles/global.css";
 import "../styles/uploadModal.css";
 import { Client, Databases, Storage, Permission, Role } from "appwrite";
@@ -43,6 +43,15 @@ const UploadModal = ({ setShowUploadModal }) => {
 
   const [loading, setLoading] = useState(false);
   const [creatingRecord, setCreatingRecord] = useState(false);
+
+  // Toasts
+  const [toasts, setToasts] = useState([]);
+  const showToast = ({ type = "info", title = "", message = "", ttl = 4500 }) => {
+    const id = `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+    setToasts((t) => [...t, { id, type, title, message }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), ttl);
+  };
+  const removeToast = (id) => setToasts((t) => t.filter((x) => x.id !== id));
 
   useEffect(() => {
     console.log("UploadModal env:", { ENDPOINT, PROJECT_ID, DATABASE_ID, PATIENTS_COL, RECORDS_COL, BUCKET_ID });
@@ -148,7 +157,12 @@ const UploadModal = ({ setShowUploadModal }) => {
 
       console.log("Normalized extracted:", normalized);
       setExtracted(normalized);
+      showToast({ type: "success", title: "Extraction complete", message: "OCR and AI extraction done — review the fields below." });
       return normalized;
+    } catch (err) {
+      console.error("AI extraction error:", err);
+      showToast({ type: "error", title: "Extraction failed", message: "OCR/AI extraction failed. See console." });
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -256,19 +270,28 @@ const UploadModal = ({ setShowUploadModal }) => {
 
   // perform OCR & extraction
   const handleProcess = async () => {
-    if (!file) return alert("Select a file first.");
+    if (!file) {
+      showToast({ type: "info", title: "No file selected", message: "Please select a scanned form before processing." });
+      return;
+    }
     try {
       await runOcrAndExtract(file);
     } catch (err) {
       console.error("OCR/extract error:", err);
-      alert("OCR or extraction failed. See console.");
+      // runOcrAndExtract already shows a toast when it fails
     }
   };
 
   // final upload & attach/create logic (auto-detect by name)
   const handleUploadAndCreateRecord = async () => {
-    if (!file) return alert("No file to upload.");
-    if (!extracted) return alert("No extracted data — press Process first.");
+    if (!file) {
+      showToast({ type: "error", title: "No file", message: "Please select a scanned form to upload." });
+      return;
+    }
+    if (!extracted) {
+      showToast({ type: "info", title: "No extracted data", message: "Run Process first to extract patient info." });
+      return;
+    }
     setCreatingRecord(true);
 
     try {
@@ -308,7 +331,10 @@ const UploadModal = ({ setShowUploadModal }) => {
       if (!patientDoc || !patientDoc.$id) throw new Error("No patient document available after detection/create.");
 
       // 4) upload image to storage
-      if (!BUCKET_ID) throw new Error("VITE_BUCKET_ID not set — enable storage uploads.");
+      if (!BUCKET_ID) {
+        showToast({ type: "error", title: "Uploads disabled", message: "VITE_BUCKET_ID missing — enable storage uploads in .env." });
+        throw new Error("VITE_BUCKET_ID not set — enable storage uploads.");
+      }
       const uploadResult = await uploadToStorage(file);
       setUploadedUrl(uploadResult.url);
       console.log("Uploaded file URL:", uploadResult.url);
@@ -323,7 +349,7 @@ const UploadModal = ({ setShowUploadModal }) => {
       // 6) append record id to patient
       await appendRecordIdToPatient(patientDoc, record.$id);
 
-      alert("Record saved and linked to patient successfully.");
+      showToast({ type: "success", title: "Saved", message: "Record saved and linked to patient." });
       console.log("Completed create/attach: patient:", patientDoc, "record:", record);
 
       // reset UI
@@ -333,283 +359,263 @@ const UploadModal = ({ setShowUploadModal }) => {
       setUploadedUrl(null);
     } catch (err) {
       console.error("Upload/create record failed:", err);
-      alert("Failed to create record. See console for details.");
+      showToast({ type: "error", title: "Save failed", message: "Failed to create record. See console for details." });
     } finally {
       setCreatingRecord(false);
     }
   };
 
-
-
-
-
-
-
-
-// USER INTERFACE
-return (
-  <div className="modal-outer">
-    <div className="modal">
-      <div className="modal-header">
-        <h2 className="modal-title">Upload Medical Form</h2>
-        <div>
-          <button
-            onClick={() => setShowUploadModal(false)}
-            className="btn-close"
-          >
-            <X size={24} />
-          </button>
-        </div>
-      </div>
-
-      <div className="modal-body">
-        <div
-          className="upload-area"
-          onClick={() => document.getElementById("um-file-input")?.click()}
-          title="Click to choose file"
-        >
-          <Upload className="upload-icon" />
-          <div>
-            <div className="file-name">
-              {file ? file.name : "Click to select or drop a scanned form"}
-            </div>
-            <div className="file-hint">
-              {file
-                ? `${(file.size / 1024).toFixed(1)} KB`
-                : "PNG/JPG preferred"}
+  // USER INTERFACE
+  return (
+    <>
+      <div className="modal-outer">
+        <div className="modal">
+          <div className="modal-header">
+            <h2 className="modal-title">Upload Medical Form</h2>
+            <div>
+              <button onClick={() => setShowUploadModal(false)} className="btn-close">
+                <X size={24} />
+              </button>
             </div>
           </div>
-          <input
-            id="um-file-input"
-            type="file"
-            accept="image/*"
-            className="hidden-input"
-            onChange={handleFileChange}
-          />
-        </div>
 
-        <div className="action-row">
-          <button
-            onClick={handleProcess}
-            className="btn btn-primary"
-            disabled={!file || loading}
-          >
-            {loading ? "Processing..." : "Process"}
-          </button>
-
-          <button
-            onClick={() => {
-              setFile(null);
-              setExtracted(null);
-              setOcrText("");
-              setUploadedUrl(null);
-            }}
-            className="btn btn-secondary"
-          >
-            Reset
-          </button>
-        </div>
-
-        {ocrText && (
-          <div className="ocr-preview">
-            <strong>OCR Preview</strong>
-            <div className="ocr-text">{ocrText}</div>
-          </div>
-        )}
-
-        {extracted && (
-          <div className="extracted">
-            <strong>Extracted Data (editable)</strong>
-
-            <div>
-              <label className="form-label">Name</label>
-              <input
-                value={extracted.name || ""}
-                onChange={(e) =>
-                  setExtracted((p) => ({ ...(p || {}), name: e.target.value }))
-                }
-                className="form-input"
-              />
-            </div>
-
-            <div className="two-col">
+          <div className="modal-body">
+            <div
+              className="upload-area"
+              onClick={() => document.getElementById("um-file-input")?.click()}
+              title="Click to choose file"
+            >
+              <Upload className="upload-icon" />
               <div>
-                <label className="form-label">Date of Birth</label>
-                <input
-                  value={extracted.dateofbirth || ""}
-                  onChange={(e) =>
-                    setExtracted((p) => ({
-                      ...(p || {}),
-                      dateofbirth: e.target.value,
-                    }))
-                  }
-                  placeholder="DD/MM/YYYY or ISO"
-                  className="form-input"
-                />
+                <div className="file-name">{file ? file.name : "Click to select or drop a scanned form"}</div>
+                <div className="file-hint">{file ? `${(file.size / 1024).toFixed(1)} KB` : "PNG/JPG preferred"}</div>
               </div>
-              <div>
-                <label className="form-label">Visited (record date)</label>
-                <input
-                  value={extracted.visited || ""}
-                  onChange={(e) =>
-                    setExtracted((p) => ({
-                      ...(p || {}),
-                      visited: e.target.value,
-                    }))
-                  }
-                  placeholder="DD/MM/YYYY or ISO"
-                  className="form-input"
-                />
-              </div>
+              <input id="um-file-input" type="file" accept="image/*" className="hidden-input" onChange={handleFileChange} />
             </div>
 
-            <div>
-              <label className="form-label">
-                Phone (will be cleaned to digits)
-              </label>
-              <input
-                value={extracted.phone || ""}
-                onChange={(e) =>
-                  setExtracted((p) => ({ ...(p || {}), phone: e.target.value }))
-                }
-                className="form-input"
-              />
-              <div className="detected-digits">
-                Detected digits: {extracted?.phoneDigits ?? "none"}
-              </div>
+            <div className="action-row">
+              <button onClick={handleProcess} className="btn btn-primary" disabled={!file || loading}>
+                {loading ? "Processing..." : "Process"}
+              </button>
+
+              <button
+                onClick={() => {
+                  setFile(null);
+                  setExtracted(null);
+                  setOcrText("");
+                  setUploadedUrl(null);
+                }}
+                className="btn btn-secondary"
+              >
+                Reset
+              </button>
             </div>
 
-            <div>
-              <label className="form-label">Email</label>
-              <input
-                value={extracted.email || ""}
-                onChange={(e) =>
-                  setExtracted((p) => ({ ...(p || {}), email: e.target.value }))
-                }
-                className="form-input"
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Place / Hospital</label>
-              <input
-                value={extracted.place || ""}
-                onChange={(e) =>
-                  setExtracted((p) => ({ ...(p || {}), place: e.target.value }))
-                }
-                className="form-input"
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Gender</label>
-              <input
-                value={extracted.gender || ""}
-                onChange={(e) =>
-                  setExtracted((p) => ({ ...(p || {}), gender: e.target.value }))
-                }
-                className="form-input"
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Blood Type</label>
-              <input
-                value={extracted.bloodtype || ""}
-                onChange={(e) =>
-                  setExtracted((p) => ({
-                    ...(p || {}),
-                    bloodtype: e.target.value,
-                  }))
-                }
-                className="form-input"
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Symptoms</label>
-              <input
-                value={extracted.symptom1 || ""}
-                onChange={(e) =>
-                  setExtracted((p) => ({
-                    ...(p || {}),
-                    symptom1: e.target.value,
-                  }))
-                }
-                placeholder="Symptom 1"
-                className="form-input symptom-input"
-              />
-              <input
-                value={extracted.symptom2 || ""}
-                onChange={(e) =>
-                  setExtracted((p) => ({
-                    ...(p || {}),
-                    symptom2: e.target.value,
-                  }))
-                }
-                placeholder="Symptom 2"
-                className="form-input symptom-input"
-              />
-              <input
-                value={extracted.symptom3 || ""}
-                onChange={(e) =>
-                  setExtracted((p) => ({
-                    ...(p || {}),
-                    symptom3: e.target.value,
-                  }))
-                }
-                placeholder="Symptom 3"
-                className="form-input"
-              />
-            </div>
-
-            <div>
-              <label className="form-label">Summary</label>
-              <textarea
-                value={extracted.summary || ""}
-                onChange={(e) =>
-                  setExtracted((p) => ({
-                    ...(p || {}),
-                    summary: e.target.value,
-                  }))
-                }
-                rows={3}
-                className="form-textarea"
-              />
-            </div>
-
-            {uploadedUrl && (
-              <div>
-                <label className="form-label">Uploaded image preview</label>
-                <img src={uploadedUrl} alt="uploaded" className="uploaded-img" />
+            {ocrText && (
+              <div className="ocr-preview">
+                <strong>OCR Preview</strong>
+                <div className="ocr-text">{ocrText}</div>
               </div>
             )}
 
-            <div className="footer-actions">
-              <button onClick={() => setShowUploadModal(false)} className="btn btn-reset">
-                Close
-              </button>
-              <button
-                onClick={async () => {
-                  if (extracted?.phone) {
-                    const digits = ("" + extracted.phone).replace(/[^\d]/g, "");
-                    extracted.phoneDigits = digits || null;
-                  } else {
-                    extracted.phoneDigits = extracted.phoneDigits ?? null;
-                  }
-                  await handleUploadAndCreateRecord();
-                }}
-                className="btn btn-primary"
-                disabled={creatingRecord || loading}
-              >
-                {creatingRecord ? "Saving..." : "Upload & Save Record"}
-              </button>
-            </div>
+            {extracted && (
+              <div className="extracted">
+                <strong>Extracted Data (editable)</strong>
+
+                <div>
+                  <label className="form-label">Name</label>
+                  <input
+                    value={extracted.name || ""}
+                    onChange={(e) => setExtracted((p) => ({ ...(p || {}), name: e.target.value }))}
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="two-col">
+                  <div>
+                    <label className="form-label">Date of Birth</label>
+                    <input
+                      value={extracted.dateofbirth || ""}
+                      onChange={(e) => setExtracted((p) => ({ ...(p || {}), dateofbirth: e.target.value }))}
+                      placeholder="DD/MM/YYYY or ISO"
+                      className="form-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="form-label">Visited (record date)</label>
+                    <input
+                      value={extracted.visited || ""}
+                      onChange={(e) => setExtracted((p) => ({ ...(p || {}), visited: e.target.value }))}
+                      placeholder="DD/MM/YYYY or ISO"
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="form-label">Phone (will be cleaned to digits)</label>
+                  <input
+                    value={extracted.phone || ""}
+                    onChange={(e) => setExtracted((p) => ({ ...(p || {}), phone: e.target.value }))}
+                    className="form-input"
+                  />
+                  <div className="detected-digits">Detected digits: {extracted?.phoneDigits ?? "none"}</div>
+                </div>
+
+                <div>
+                  <label className="form-label">Email</label>
+                  <input
+                    value={extracted.email || ""}
+                    onChange={(e) => setExtracted((p) => ({ ...(p || {}), email: e.target.value }))}
+                    className="form-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Place / Hospital</label>
+                  <input
+                    value={extracted.place || ""}
+                    onChange={(e) => setExtracted((p) => ({ ...(p || {}), place: e.target.value }))}
+                    className="form-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Gender</label>
+                  <input
+                    value={extracted.gender || ""}
+                    onChange={(e) => setExtracted((p) => ({ ...(p || {}), gender: e.target.value }))}
+                    className="form-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Blood Type</label>
+                  <input
+                    value={extracted.bloodtype || ""}
+                    onChange={(e) => setExtracted((p) => ({ ...(p || {}), bloodtype: e.target.value }))}
+                    className="form-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Symptoms</label>
+                  <input
+                    value={extracted.symptom1 || ""}
+                    onChange={(e) => setExtracted((p) => ({ ...(p || {}), symptom1: e.target.value }))}
+                    placeholder="Symptom 1"
+                    className="form-input symptom-input"
+                  />
+                  <input
+                    value={extracted.symptom2 || ""}
+                    onChange={(e) => setExtracted((p) => ({ ...(p || {}), symptom2: e.target.value }))}
+                    placeholder="Symptom 2"
+                    className="form-input symptom-input"
+                  />
+                  <input
+                    value={extracted.symptom3 || ""}
+                    onChange={(e) => setExtracted((p) => ({ ...(p || {}), symptom3: e.target.value }))}
+                    placeholder="Symptom 3"
+                    className="form-input"
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label">Summary</label>
+                  <textarea
+                    value={extracted.summary || ""}
+                    onChange={(e) => setExtracted((p) => ({ ...(p || {}), summary: e.target.value }))}
+                    rows={3}
+                    className="form-textarea"
+                  />
+                </div>
+
+                {uploadedUrl && (
+                  <div>
+                    <label className="form-label">Uploaded image preview</label>
+                    <img src={uploadedUrl} alt="uploaded" className="uploaded-img" />
+                  </div>
+                )}
+
+                <div className="footer-actions">
+                  <button onClick={() => setShowUploadModal(false)} className="btn btn-reset">
+                    Close
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (extracted?.phone) {
+                        const digits = ("" + extracted.phone).replace(/[^\d]/g, "");
+                        extracted.phoneDigits = digits || null;
+                      } else {
+                        extracted.phoneDigits = extracted.phoneDigits ?? null;
+                      }
+                      await handleUploadAndCreateRecord();
+                    }}
+                    className="btn btn-primary"
+                    disabled={creatingRecord || loading}
+                  >
+                    {creatingRecord ? "Saving..." : "Upload & Save Record"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
-    </div>
-  </div>
+
+      {/* Toast container (top-right) */}
+      <div
+        style={{
+          position: "fixed",
+          right: 18,
+          top: 18,
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          zIndex: 9999,
+        }}
+      >
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            style={{
+              display: "flex",
+              gap: 12,
+              alignItems: "flex-start",
+              background: t.type === "success" ? "#ecfdf5" : t.type === "error" ? "#fff1f2" : "#eff6ff",
+              border: `1px solid ${t.type === "success" ? "#34d399" : t.type === "error" ? "#fb7185" : "#60a5fa"}`,
+              padding: "10px 12px",
+              borderRadius: 10,
+              boxShadow: "0 6px 18px rgba(2,6,23,0.06)",
+              minWidth: 300,
+            }}
+          >
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 8,
+                display: "grid",
+                placeItems: "center",
+                background: t.type === "success" ? "#bbf7d0" : t.type === "error" ? "#fecaca" : "#dbeafe",
+                flex: "0 0 40px",
+              }}
+            >
+              {t.type === "success" ? <Check size={18} color={t.type === "success" ? "#065f46" : "#7f1d1d"} /> : <AlertTriangle size={18} color={t.type === "error" ? "#7f1d1d" : "#1e3a8a"} />}
+            </div>
+
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700 }}>{t.title}</div>
+              {t.message && <div style={{ marginTop: 6, opacity: 0.95 }}>{t.message}</div>}
+            </div>
+
+            <button onClick={() => removeToast(t.id)} aria-label="Close toast" style={{ background: "transparent", border: "none", cursor: "pointer" }}>
+              <X size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </>
   );
 };
 
