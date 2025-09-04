@@ -1,5 +1,7 @@
 import React from "react";
 import { Upload, Download, BarChart3 } from "lucide-react";
+import "../styles/landingPage.css";
+import "../styles/global.css";
 
 const LandingPage = ({
   setCurrentPage,

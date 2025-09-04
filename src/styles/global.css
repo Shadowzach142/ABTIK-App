@@ -1,0 +1,240 @@
+/* ================================
+   GLOBAL STYLES
+   ================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.5;
+  color: #333;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+/* ================================
+   MODAL STYLES
+   ================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem;
+}
+
+/* modal container */
+.modal-outer {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(2, 6, 23, 0.45);
+  z-index: 1000;
+  padding: 16px;
+}
+
+/* modal box */
+.modal {
+  width: 100%;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(2, 6, 23, 0.12);
+  max-width: 35rem;
+  padding: 1.5rem;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-title {
+  margin: 0;
+}
+
+/* header */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  /* padding: 12px; */
+  border-bottom: 1px solid #eef2f7;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* body */
+.modal-body {
+  padding: 16px;
+  max-height: 72vh;
+  overflow-y: auto;
+  display: grid;
+  gap: 12px;
+}
+
+.btn {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  font-size: 0.875rem;               /* text color */
+}
+
+/* Hover state for primary button */
+.btn:hover {
+  background-color: #2563eb;
+}
+
+.btn-close {
+  color: #6b7280;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: all 0.3s ease;
+}
+
+.btn-close:hover {
+  color: #374151;
+  background-color: #f3f4f6;
+}
+
+.btn-primary {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #2563eb;
+}
+
+.btn-secondary {
+  background-color: #e5e7eb;
+  color: #1f2937;
+}
+
+.btn-secondary:hover {
+  background-color: #d1d5db;
+}
+
+.btn-reset {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+/* ================================
+   MOBILE OVERLAY
+   ================================ */
+.mobile-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 30;
+  display: none;
+}
+
+.mobile-overlay.show {
+  display: block;
+}
+
+/* ================================
+   RESPONSIVE DESIGN
+   ================================ */
+@media (max-width: 768px) {
+  .landing-title {
+    font-size: 2rem;
+  }
+
+  .landing-subtitle {
+    font-size: 1rem;
+  }
+
+  .landing-container {
+    padding: 2rem 1rem;
+  }
+
+  .analytics-mobile-header {
+    display: block;
+  }
+
+  .analytics-sidebar.open {
+    display: block;
+  }
+
+  .mobile-overlay.show {
+    display: block;
+  }
+
+  .modal {
+    margin: 1rem;
+    max-width: calc(100% - 2rem);
+  }
+
+  .action-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .analytics-content {
+    padding: 1rem;
+  }
+
+  .chart-container {
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .analytics-sidebar {
+    position: relative;
+    display: block;
+    left: auto;
+    top: auto;
+    bottom: auto;
+    z-index: auto;
+  }
+
+  .sidebar-title {
+    display: block;
+  }
+
+  .analytics-header {
+    display: block;
+  }
+
+  .analytics-main {
+    margin-left: 0;
+  }
+
+  .analytics-grid {
+    grid-template-columns: 2fr 1fr;
+  }
+
+  .map-section {
+    grid-column: span 1;
+  }
+}
+
+@media (min-width: 1024px) {
+  .analytics-grid {
+    grid-template-columns: 2fr 1fr;
+  }
+
+  .map-section {
+    grid-column: span 1;
+  }
+}
