@@ -88,7 +88,7 @@ const UploadModal = ({ setShowUploadModal }) => {
       const promptBody = {
         prompt:
           "Extract patient information from the medical form text and return VALID JSON ONLY with these keys: " +
-          "`name`, `dateofbirth` (DD/MM/YYYY or ISO or null), `visited` (DD/MM/YYYY or ISO or null), `phone`, `email`, `bloodtype`, `gender`, `place`, " +
+          "`name`, `dateofbirth` (MM-DD-YYYY or ISO or null), `visited` (MM-DD-YYYY or ISO or null), `phone`, `email`, `bloodtype`, `gender`, `place`, " +
           "`symptom1`, `symptom2`, `symptom3`, `summary`. " +
           "If a field is missing, set it to null. Phone should contain digits (you may return formatted), email as a string if present, gender as 'Male'/'Female'/'Other' or null. " +
           "Return JSON only.",
