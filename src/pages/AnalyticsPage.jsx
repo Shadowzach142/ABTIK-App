@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import "../styles/analyticsPage.css";
+import "../styles/global.css";
 import { Client, Databases, Query } from "appwrite";
 import { MapPin } from "lucide-react";
 
@@ -387,39 +389,29 @@ const AnalyticsPage = ({ setCurrentPage }) => {
     }
   }
 
-  return (
-    <div style={{ fontFamily: "Inter, system-ui, Arial", minHeight: "100vh", background: "#f3f6f9", padding: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 12 }}>
-        <div style={{ fontWeight: 700 }}>Disease Tracking</div>
+    return (
+    <div className="analytics-container">
+      {/* HEADER */}
+      <div className="analytics-header">
+        <div className="header-title">Disease Tracking</div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={{ fontSize: 22, fontWeight: 800 }}>Analytics Dashboard</div>
-            <div style={{ color: "#64748b", fontSize: 13 }}>
+        <div className="header-right">
+          <div className="header-info">
+            <div className="dashboard-title">Analytics Dashboard</div>
+            <div className="dashboard-subtitle">
               Viewing last <strong>{timeWindowMonths} month{timeWindowMonths !== 1 ? "s" : ""}</strong>
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <div className="preset-buttons">
             {["1M", "3M", "6M", "1Y", "2Y", "5Y", "10Y"].map((p) => (
-              <button
-                key={p}
-                onClick={() => setPresetMonths(p)}
-                style={{
-                  background: "#fff",
-                  border: "1px solid #e6eef8",
-                  padding: "6px 8px",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                  fontSize: 13,
-                }}
-              >
+              <button key={p} onClick={() => setPresetMonths(p)} className="preset-button">
                 {p}
               </button>
             ))}
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 260, gap: 6 }}>
+          <div className="range-selector">
             <input
               aria-label="time window months"
               type="range"
@@ -427,9 +419,9 @@ const AnalyticsPage = ({ setCurrentPage }) => {
               max={120}
               value={timeWindowMonths}
               onChange={(e) => setTimeWindowMonths(Math.max(1, Math.min(120, Number(e.target.value))))}
-              style={{ width: 260 }}
+              className="range-input"
             />
-            <div style={{ fontSize: 12, color: "#64748b" }}>
+            <div className="range-label">
               {timeWindowMonths} month{timeWindowMonths !== 1 ? "s" : ""} ({(timeWindowMonths / 12).toFixed(2)} years)
             </div>
           </div>
@@ -437,23 +429,24 @@ const AnalyticsPage = ({ setCurrentPage }) => {
 
         <div>
           {setCurrentPage && (
-            <button onClick={() => setCurrentPage("landing")} style={{ background: "transparent", border: "none", color: "#2563eb", cursor: "pointer" }}>
-              ← Back to Home
+            <button onClick={() => setCurrentPage("landing")} className="btn btn-secondary">
+            Back to Home
             </button>
           )}
         </div>
       </div>
 
-      {error && <div style={{ color: "crimson", marginBottom: 12 }}>{error}</div>}
+      {error && <div className="error-message">{error}</div>}
 
-      <div style={{ display: "grid", gridTemplateColumns: "240px 1fr 380px", gap: 16 }}>
-        {/* LEFT: dynamic diseases list */}
+      {/* MAIN GRID */}
+      <div className="analytics-grid">
+        {/* LEFT SIDEBAR */}
         <div>
-          <div style={{ background: "#fff", borderRadius: 12, padding: 12, boxShadow: "0 8px 24px rgba(2,6,23,0.06)", height: "calc(100vh - 180px)", overflowY: "auto" }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Detected Symptoms (from Records)</div>
+          <div className="sidebar-card">
+            <div className="sidebar-title">Detected Symptoms (from Records)</div>
 
             {diseasesList.length === 0 ? (
-              <div style={{ color: "#94a3b8" }}>No symptoms found in records for the selected time window.</div>
+              <div className="sidebar-empty">No symptoms found in records for the selected time window.</div>
             ) : (
               diseasesList.map((d) => {
                 const selected = d.name === selectedDisease;
@@ -461,20 +454,11 @@ const AnalyticsPage = ({ setCurrentPage }) => {
                   <div
                     key={d.name}
                     onClick={() => setSelectedDisease(d.name)}
-                    style={{
-                      padding: 10,
-                      borderRadius: 8,
-                      marginBottom: 8,
-                      cursor: "pointer",
-                      background: selected ? "#fff7f7" : "transparent",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
+                    className={`disease-item ${selected ? "selected" : ""}`}
                   >
                     <div>
-                      <div style={{ fontWeight: 700 }}>{d.name}</div>
-                      <div style={{ color: "#94a3b8", fontSize: 13 }}>{(d.count || 0).toLocaleString()} records</div>
+                      <div className="disease-name">{d.name}</div>
+                      <div className="disease-count">{(d.count || 0).toLocaleString()} records</div>
                     </div>
                   </div>
                 );
@@ -483,19 +467,24 @@ const AnalyticsPage = ({ setCurrentPage }) => {
           </div>
         </div>
 
-        {/* CENTER: Map */}
+        {/* MAP */}
         <div>
-          <div style={{ background: "#fff", borderRadius: 12, padding: 16, boxShadow: "0 10px 30px rgba(2,6,23,0.06)" }}>
-            <div style={{ fontWeight: 700 }}>Disease Distribution Map - {selectedDisease || "—"}</div>
-            <div style={{ color: "#64748b", marginBottom: 12 }}>Distribution (past {timeWindowMonths} month{timeWindowMonths !== 1 ? "s" : ""})</div>
+          <div className="map-card">
+            <div className="map-title">Disease Distribution Map - {selectedDisease || "—"}</div>
+            <div className="map-subtitle">
+              Distribution (past {timeWindowMonths} month{timeWindowMonths !== 1 ? "s" : ""})
+            </div>
 
-            <div style={{ height: 420, borderRadius: 10, overflow: "hidden", position: "relative" }}>
+            <div className="map-container">
               {loading ? (
-                <div style={{ display: "grid", placeItems: "center", height: "100%" }}>Loading data…</div>
+                <div className="map-loading">Loading data…</div>
               ) : (
                 <>
                   <MapContainer center={defaultCenter} zoom={6} style={{ height: "100%", width: "100%" }}>
-                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; OpenStreetMap contributors' />
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; OpenStreetMap contributors'
+                    />
                     {markers.map((m) => (
                       <CircleMarker
                         key={m.place}
@@ -504,15 +493,15 @@ const AnalyticsPage = ({ setCurrentPage }) => {
                         pathOptions={{ color: "#ef4444", fillColor: "#ef4444", fillOpacity: 0.85 }}
                       >
                         <Popup>
-                          <div style={{ fontWeight: 700 }}>{m.place}</div>
+                          <div className="disease-name">{m.place}</div>
                           <div>{m.count} records</div>
                         </Popup>
                       </CircleMarker>
                     ))}
                   </MapContainer>
 
-                  <div style={{ position: "absolute", left: "50%", top: "45%", transform: "translate(-50%,-50%)", pointerEvents: "none" }}>
-                    <div style={{ width: 64, height: 64, borderRadius: 999, border: "4px solid #2563eb", display: "grid", placeItems: "center" }}>
+                  <div className="map-centerpin">
+                    <div className="map-centerpin-circle">
                       <MapPin size={28} color="#1e40af" />
                     </div>
                   </div>
@@ -522,17 +511,22 @@ const AnalyticsPage = ({ setCurrentPage }) => {
           </div>
         </div>
 
-        {/* RIGHT: Trend + Most Affected + Recent */}
+        {/* RIGHT PANEL */}
         <div>
-          <div style={{ background: "#fff", borderRadius: 12, padding: 12, boxShadow: "0 10px 30px rgba(2,6,23,0.06)", marginBottom: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontWeight: 700 }}>{selectedDisease || "—"} - Trend ({timeWindowMonths} month{timeWindowMonths !== 1 ? "s" : ""})</div>
-              <div style={{ color: "#94a3b8" }}>Monthly buckets</div>
+          {/* TREND */}
+          <div className="card card-fixed-height">
+            <div className="card-header">
+              <div className="card-title">{selectedDisease || "—"} - Trend ({timeWindowMonths} month{timeWindowMonths !== 1 ? "s" : ""})</div>
+              {/* <div className="card-subtitle">Monthly buckets</div> */}
             </div>
 
-            <div style={{ marginTop: 12 }}>
-              <div style={{ width: "100%", overflowX: "auto", marginTop: 6 }}>
-                <svg viewBox={`0 0 ${spark.W} ${spark.H}`} style={{ width: spark.W, height: 160, display: "block" }} preserveAspectRatio="none">
+            <div>
+              <div className="trend-chart">
+                <svg
+                  viewBox={`0 0 ${spark.W} ${spark.H}`}
+                  style={{ width: "100%", height: "100%", display: "block" }}
+                  preserveAspectRatio="xMidYMid meet"
+                >
                   {[0, 0.25, 0.5, 0.75, 1].map((t, i) => (
                     <line key={i} x1="0" x2={spark.W} y1={t * spark.H} y2={t * spark.H} stroke="#eef2f7" strokeWidth="1" />
                   ))}
@@ -540,32 +534,32 @@ const AnalyticsPage = ({ setCurrentPage }) => {
                   <path d={spark.d} fill="none" stroke="#ef4444" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
                 </svg>
               </div>
-
-              <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 6 }}>
+              <div className="trend-note">
                 Showing last {timeWindowMonths} month{timeWindowMonths !== 1 ? "s" : ""}.
               </div>
             </div>
           </div>
 
-          <div style={{ background: "#fff", borderRadius: 12, padding: 12, boxShadow: "0 10px 30px rgba(2,6,23,0.06)", marginBottom: 12 }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Most Affected Areas</div>
+          {/* MOST AFFECTED */}
+          <div className="card card-fixed-height">
+            <div className="affected-title">Most Affected Areas</div>
             {affectedAreas.length === 0 ? (
-              <div style={{ color: "#94a3b8" }}>No data</div>
+              <div className="affected-empty">No data</div>
             ) : (
               affectedAreas.map((a, idx) => {
                 const max = Math.max(...affectedAreas.map((x) => x.count), 1);
                 const pct = Math.round((a.count / max) * 100);
                 return (
-                  <div key={a.place} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div key={a.place} className="affected-item">
                     <div>
-                      <div style={{ fontWeight: 700 }}>{a.place}</div>
-                      <div style={{ color: "#94a3b8", fontSize: 12 }}>#{idx + 1}</div>
+                      <div className="affected-info">{a.place}</div>
+                      <div className="affected-rank">#{idx + 1}</div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 140, height: 10, background: "#f1f5f9", borderRadius: 999 }}>
-                        <div style={{ width: `${pct}%`, height: "100%", background: "#ef4444", borderRadius: 999 }} />
+                    <div className="affected-bar">
+                      <div className="bar-bg">
+                        <div className="bar-fill" style={{ width: `${pct}%` }} />
                       </div>
-                      <div style={{ width: 42, textAlign: "right", fontWeight: 700 }}>{a.count}</div>
+                      <div className="bar-count">{a.count}</div>
                     </div>
                   </div>
                 );
@@ -573,22 +567,24 @@ const AnalyticsPage = ({ setCurrentPage }) => {
             )}
           </div>
 
-          <div style={{ background: "#fff", borderRadius: 12, padding: 12, boxShadow: "0 10px 30px rgba(2,6,23,0.06)" }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Recent Reports (examples)</div>
-            <div style={{ color: "#64748b", fontSize: 13 }}>
-              {(records || [])
-                .slice(0, 6)
-                .map((r, i) => (
-                  <div key={i} style={{ marginBottom: 8 }}>
-                    • {compactSymptomsText(r)} — <em style={{ color: "#94a3b8" }}>{r.recorddate}</em>
-                  </div>
-                ))}
+          {/* RECENT REPORTS */}
+          <div className="card card-fixed-height">
+            <div className="recent-title">Recent Reports (examples)</div>
+            <div className="recent-list">
+              {(records || []).slice(0, 6).map((r, i) => (
+                <div key={i} className="recent-item">
+                  • {compactSymptomsText(r)} — <em className="recent-date">{r.recorddate}</em>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      <div style={{ marginTop: 8, color: "#94a3b8", fontSize: 12 }}>* Data from Appwrite. Geocoding via OpenStreetMap/Nominatim (cached in localStorage).</div>
+      {/* FOOTER */}
+      {/* <div className="footer-note">
+        * Data from Appwrite. Geocoding via OpenStreetMap/Nominatim (cached in localStorage).
+      </div> */}
     </div>
   );
 };

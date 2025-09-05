@@ -52,7 +52,7 @@ body {
   box-shadow: 0 12px 30px rgba(2, 6, 23, 0.12);
   max-width: 35rem;
   padding: 1.5rem;
-  max-height: 90vh;
+  max-height: none;
   overflow-y: auto;
 }
 .modal-title {

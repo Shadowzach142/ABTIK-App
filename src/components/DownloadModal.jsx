@@ -377,7 +377,7 @@ const DownloadModal = ({ setShowDownloadModal }) => {
               <X size={24} />
             </button>
           </div>
-          <div className="modal-body">
+          <div>
             <div className="modal-search">
               <Search size={18} />
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search patient by name..." />
