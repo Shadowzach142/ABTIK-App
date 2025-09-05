@@ -1,6 +1,5 @@
 // src/components/DownloadModal.jsx
-import { Client, Databases, Storage } from "appwrite";
-// import "../styles/downloadModal.css";
+import { Client, Databases, Storage, Query } from "appwrite";
 import "../styles/global.css";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -24,6 +23,7 @@ import {
   EyeOff,
   Check,
   AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 
 /* ---------- Appwrite setup (use your env vars) ---------- */
@@ -147,7 +147,7 @@ const DownloadModal = ({ setShowDownloadModal }) => {
     console.log("ENV:", { ENDPOINT, PROJECT_ID, DATABASE_ID, PATIENTS_COL, RECORDS_COL, BUCKET_ID });
   }, []);
 
-  // Debounced search
+  // Debounced search — fetch fresh patients from Appwrite each time
   useEffect(() => {
     if (!searchQuery.trim()) {
       setPatients([]);
@@ -157,13 +157,15 @@ const DownloadModal = ({ setShowDownloadModal }) => {
     return () => clearTimeout(t);
   }, [searchQuery]);
 
+  // Fetch patients (large limit so newly uploaded docs are included)
   const fetchPatients = async (q) => {
     setLoadingPatients(true);
     console.log("Searching patients for:", q);
     try {
-      const res = await databases.listDocuments(DATABASE_ID, PATIENTS_COL);
+      // request up to 1000 docs (adjust if you expect >1000)
+      const res = await databases.listDocuments(DATABASE_ID, PATIENTS_COL, [Query.limit(1000)]);
       console.log("Appwrite patients raw:", res);
-      const filtered = res.documents.filter((d) => (d.name || "").toLowerCase().includes(q.toLowerCase()));
+      const filtered = (res.documents || []).filter((d) => (d.name || "").toLowerCase().includes(q.toLowerCase()));
       console.log("Filtered results:", filtered);
       setPatients(filtered);
     } catch (err) {
@@ -175,14 +177,16 @@ const DownloadModal = ({ setShowDownloadModal }) => {
     }
   };
 
-  const fetchRecordsForPatient = async (patientId) => {
+  // Fetch records for a patient — ALWAYS refetch to include recent uploads
+  const fetchRecordsForPatient = async (patientId, { showToasts = false } = {}) => {
     if (!patientId) return;
-    if (recordsByPatient[patientId]) return;
     setRecordsLoading((s) => ({ ...s, [patientId]: true }));
+    if (showToasts) showToast({ type: "info", title: "Refreshing", message: "Fetching latest records..." });
     try {
-      const res = await databases.listDocuments(DATABASE_ID, RECORDS_COL);
+      // request a large limit to ensure we get recent items
+      const res = await databases.listDocuments(DATABASE_ID, RECORDS_COL, [Query.limit(1000)]);
       console.log("Appwrite records raw:", res);
-      const filtered = res.documents
+      const filtered = (res.documents || [])
         .filter((r) => {
           if (!r.patientsid) return false;
           if (typeof r.patientsid === "string") return r.patientsid === patientId;
@@ -196,6 +200,7 @@ const DownloadModal = ({ setShowDownloadModal }) => {
           return tb - ta;
         });
       console.log("Filtered records:", filtered);
+      // always replace cache for that patient so uploads show immediately
       setRecordsByPatient((prev) => ({ ...prev, [patientId]: filtered }));
     } catch (err) {
       console.error("Error fetching records:", err);
@@ -215,16 +220,19 @@ const DownloadModal = ({ setShowDownloadModal }) => {
     setEditedPatient(null);
     setShowPassword(false);
     setRecordExpanded({});
-    if (will) fetchRecordsForPatient(id);
+    if (will) {
+      // fetch fresh records each time the panel opens
+      fetchRecordsForPatient(id, { showToasts: false });
+    }
   };
 
   const toggleRecord = (recordId) => setRecordExpanded((prev) => ({ ...prev, [recordId]: !prev[recordId] }));
 
-  // FIX: accept patient directly so we don't rely on stale selectedPatient state
+  // Start editing a patient
   const handleStartEdit = (patient) => {
     if (!patient) return;
     setSelectedPatient(patient);
-    setEditedPatient({ ...patient }); // immediate snapshot
+    setEditedPatient({ ...patient });
     setIsEditing(true);
     setShowPassword(false);
     console.log("Edit started for patient:", patient.$id);
@@ -259,7 +267,7 @@ const DownloadModal = ({ setShowDownloadModal }) => {
     }
   };
 
-  // Upload & immediately update patient profile attribute
+  // Handle profile file select & immediate save to patient document
   const handleProfileFileSelect = async (files) => {
     const file = files?.[0];
     if (!file) return;
@@ -304,7 +312,6 @@ const DownloadModal = ({ setShowDownloadModal }) => {
       return;
     }
 
-    // Prefer editedPatient (current changes), fallback to selectedPatient
     const docToSave = editedPatient || selectedPatient;
     const docId = docToSave.$id || (selectedPatient && selectedPatient.$id);
 
@@ -334,31 +341,29 @@ const DownloadModal = ({ setShowDownloadModal }) => {
     if (cleanedPhone !== null) payload.phonenumber = cleanedPhone;
     if (docToSave.profile) payload.profile = docToSave.profile;
 
-    // New: include password if present in editedPatient
     if (docToSave.password !== undefined && docToSave.password !== null && docToSave.password !== "") {
       console.log("Password provided — will include in update payload (value not logged).");
       payload.password = docToSave.password;
       console.warn("Storing plaintext passwords is insecure. Consider a safer approach.");
     }
 
-    console.log("Saving patient payload for id:", docId, { ...payload, _maskedPassword: payload.password ? true : false }); // mask in logs
+    console.log("Saving patient payload for id:", docId, { ...payload, _maskedPassword: payload.password ? true : false });
     try {
       const updated = await databases.updateDocument(DATABASE_ID, PATIENTS_COL, docId, payload);
       console.log("Save succeeded, updated doc:", updated);
-      // update local caches
       setPatients((prev) => prev.map((p) => (p.$id === updated.$id ? updated : p)));
       setSelectedPatient(updated);
       setEditedPatient(null);
       setIsEditing(false);
       setShowPassword(false);
       showToast({ type: "success", title: "Saved", message: "Patient information updated successfully." });
-      // keep expanded view
     } catch (err) {
       console.error("Error updating patient:", err);
       showToast({ type: "error", title: "Save failed", message: "Failed to save changes. Check console." });
     }
   };
 
+  // Quick UI content
   const topContent = useMemo(() => {
     if (!searchQuery.trim()) return <p className="dm-text-muted">Type a name to search patients…</p>;
     if (loadingPatients) return <p>Searching…</p>;
@@ -533,6 +538,19 @@ const DownloadModal = ({ setShowDownloadModal }) => {
                                     </button>
                                   </>
                                 )}
+
+                                {/* NEW: Refresh records button */}
+                                <button
+                                  title="Refresh records for this patient"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    fetchRecordsForPatient(p.$id, { showToasts: true });
+                                  }}
+                                  className="dm-btn dm-btn-ghost"
+                                  style={{ marginLeft: 8 }}
+                                >
+                                  <RefreshCw size={14} /> Refresh Records
+                                </button>
                               </div>
                             </div>
                           </div>
@@ -648,7 +666,6 @@ const DownloadModal = ({ setShowDownloadModal }) => {
         ))}
       </div>
 
-      {/* small animation style (optional) */}
       <style>{`
         @keyframes toastIn {
           from { transform: translateY(-6px); opacity: 0; }
