@@ -40,8 +40,23 @@ const storage = new Storage(client);
 
 /* ---------- helpers ---------- */
 const fmtDateOnly = (value) => {
-  const d = new Date(value);
-  if (isNaN(d.getTime())) return value || "N/A";
+  if (!value) return "N/A";
+  const tryParse = (v) => {
+    if (typeof v === "string") {
+      const mmddyyyy = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+      if (mmddyyyy) {
+        const mm = String(mmddyyyy[1]).padStart(2, "0");
+        const dd = String(mmddyyyy[2]).padStart(2, "0");
+        const yyyy = mmddyyyy[3].length === 2 ? "20" + mmddyyyy[3] : mmddyyyy[3];
+        return new Date(`${yyyy}-${mm}-${dd}`);
+      }
+    }
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  const d = tryParse(value);
+  if (!d) return value || "N/A";
   return d.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
 };
 
@@ -51,6 +66,50 @@ const cleanInteger = (raw) => {
   if (s === "") return null;
   const n = parseInt(s, 10);
   return Number.isNaN(n) ? null : n;
+};
+
+// Normalize names: trim, lowercase, remove diacritics & punctuation, collapse spaces
+const normalizeName = (n = "") =>
+  String(n || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // remove diacritics
+    .replace(/[^\p{L}\p{N}\s]/gu, "") // remove punctuation (unicode aware)
+    .replace(/\s+/g, " ");
+
+const dedupeAndSortRecords = (records = []) => {
+  const map = new Map();
+  for (const r of records) {
+    if (!r || !r.$id) continue;
+    if (!map.has(r.$id)) map.set(r.$id, r);
+  }
+  const arr = Array.from(map.values());
+  arr.sort((a, b) => {
+    const ta = new Date(a.recorddate).getTime();
+    const tb = new Date(b.recorddate).getTime();
+    if (isNaN(ta) && isNaN(tb)) return 0;
+    if (isNaN(ta)) return 1;
+    if (isNaN(tb)) return -1;
+    return tb - ta;
+  });
+  return arr;
+};
+
+const matchesPatientId = (r, patientId) => {
+  if (!r || !patientId) return false;
+  if (typeof r.patientsid === "string") return r.patientsid === patientId;
+  if (r.patientsid && typeof r.patientsid === "object") {
+    // support embedded doc shape or object with $id
+    if (r.patientsid.$id) return r.patientsid.$id === patientId;
+    // other shapes: try toString
+    try {
+      return String(r.patientsid) === String(patientId);
+    } catch {
+      return false;
+    }
+  }
+  return false;
 };
 
 const Field = ({ icon, label, value }) => (
@@ -147,13 +206,53 @@ const DownloadModal = ({ setShowDownloadModal }) => {
     console.log("ENV:", { ENDPOINT, PROJECT_ID, DATABASE_ID, PATIENTS_COL, RECORDS_COL, BUCKET_ID });
   }, []);
 
+  // ---------- NEW: Listen for 'records:updated' CustomEvent and 'records-updated' storage key ----------
+  useEffect(() => {
+    const handleCustom = (e) => {
+      try {
+        const pid = e?.detail?.patientId;
+        console.log("DownloadModal received records:updated event, patientId:", pid);
+        if (pid) {
+          const p = patients.find((x) => x.$id === pid);
+          fetchRecordsForPatient(pid, p?.name, { showToasts: true });
+        } else if (selectedPatient?.$id) fetchRecordsForPatient(selectedPatient.$id, selectedPatient.name, { showToasts: true });
+      } catch (err) {
+        console.warn("Error handling records:updated event", err);
+      }
+    };
+
+    const handleStorage = (ev) => {
+      if (ev.key !== "records-updated") return;
+      try {
+        const data = ev.newValue ? JSON.parse(ev.newValue) : null;
+        const pid = data?.patientId;
+        console.log("DownloadModal storage event records-updated:", pid);
+        if (pid) {
+          const p = patients.find((x) => x.$id === pid);
+          fetchRecordsForPatient(pid, p?.name, { showToasts: true });
+        } else if (selectedPatient?.$id) fetchRecordsForPatient(selectedPatient.$id, selectedPatient.name, { showToasts: true });
+      } catch (err) {
+        console.warn("Error handling storage records-updated event", err);
+      }
+    };
+
+    window.addEventListener("records:updated", handleCustom);
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener("records:updated", handleCustom);
+      window.removeEventListener("storage", handleStorage);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPatient, patients]);
+
   // Debounced search — fetch fresh patients from Appwrite each time
   useEffect(() => {
     if (!searchQuery.trim()) {
       setPatients([]);
       return;
     }
-    const t = setTimeout(() => fetchPatients(searchQuery.trim()), 600);
+    const t = setTimeout(() => fetchPatients(searchQuery.trim()), 400);
     return () => clearTimeout(t);
   }, [searchQuery]);
 
@@ -177,31 +276,81 @@ const DownloadModal = ({ setShowDownloadModal }) => {
     }
   };
 
-  // Fetch records for a patient — ALWAYS refetch to include recent uploads
-  const fetchRecordsForPatient = async (patientId, { showToasts = false } = {}) => {
+  /**
+   * fetchRecordsForPatient(patientId, patientName, opts)
+   *
+   * - Tries: Query.equal('patientsid', patientId)
+   * - Also tries: Query.equal('name', patientName) in parallel when patientName present
+   * - Combines unique records from both queries
+   * - Final fallback: broad fetch + client-side filter (patientsid match OR normalized name token containment)
+   */
+  const fetchRecordsForPatient = async (patientId, patientName = null, { showToasts = false } = {}) => {
     if (!patientId) return;
     setRecordsLoading((s) => ({ ...s, [patientId]: true }));
     if (showToasts) showToast({ type: "info", title: "Refreshing", message: "Fetching latest records..." });
+
     try {
-      // request a large limit to ensure we get recent items
-      const res = await databases.listDocuments(DATABASE_ID, RECORDS_COL, [Query.limit(1000)]);
-      console.log("Appwrite records raw:", res);
-      const filtered = (res.documents || [])
-        .filter((r) => {
-          if (!r.patientsid) return false;
-          if (typeof r.patientsid === "string") return r.patientsid === patientId;
-          if (r.patientsid?.$id) return r.patientsid.$id === patientId;
-          return false;
-        })
-        .sort((a, b) => {
-          const ta = new Date(a.recorddate).getTime();
-          const tb = new Date(b.recorddate).getTime();
-          if (isNaN(ta) || isNaN(tb)) return 0;
-          return tb - ta;
-        });
-      console.log("Filtered records:", filtered);
-      // always replace cache for that patient so uploads show immediately
-      setRecordsByPatient((prev) => ({ ...prev, [patientId]: filtered }));
+      // Parallel attempts: by patientsid and by name (if name provided)
+      let byPatientsId = [];
+      let byName = [];
+
+      // attempt patientsid query
+      try {
+        const res = await databases.listDocuments(DATABASE_ID, RECORDS_COL, [Query.limit(1000), Query.equal("patientsid", patientId)]);
+        byPatientsId = (res && res.documents) || [];
+      } catch (err) {
+        console.warn("Server-side records query by patientsid failed (will try fallbacks):", err);
+        byPatientsId = [];
+      }
+
+      // attempt name query if have patientName
+      if (patientName) {
+        try {
+          const res2 = await databases.listDocuments(DATABASE_ID, RECORDS_COL, [Query.limit(1000), Query.equal("name", patientName)]);
+          byName = (res2 && res2.documents) || [];
+        } catch (err) {
+          console.warn("Server-side records query by name failed (will fallback to client-side):", err);
+          byName = [];
+        }
+      }
+
+      // Combine results (de-duped)
+      let combined = [...byPatientsId, ...byName];
+
+      // If we already have some combined, dedupe and set
+      if (combined.length > 0) {
+        const final = dedupeAndSortRecords(combined);
+        setRecordsByPatient((prev) => ({ ...prev, [patientId]: final }));
+        return;
+      }
+
+      // Final fallback: broad fetch (limit) + client-side filter for both patientsid match and normalized name match
+      const broad = await databases.listDocuments(DATABASE_ID, RECORDS_COL, [Query.limit(1000)]);
+      const allRecords = broad.documents || [];
+
+      // Filter records that match patientsid OR have a name match to patientName
+      const matched = allRecords.filter((r) => {
+        if (matchesPatientId(r, patientId)) return true;
+        if (patientName && r.name) {
+          const rn = normalizeName(r.name || "");
+          const pNorm = normalizeName(patientName || "");
+          if (!rn || !pNorm) return false;
+          if (rn === pNorm) return true;
+          // token containment: every token in patientName appears in record name
+          const tokens = pNorm.split(" ").filter(Boolean);
+          return tokens.length > 0 && tokens.every((t) => rn.includes(t));
+        }
+        return false;
+      });
+
+      if (matched.length > 0) {
+        const final = dedupeAndSortRecords(matched);
+        setRecordsByPatient((prev) => ({ ...prev, [patientId]: final }));
+        return;
+      }
+
+      // Nothing found
+      setRecordsByPatient((prev) => ({ ...prev, [patientId]: [] }));
     } catch (err) {
       console.error("Error fetching records:", err);
       setRecordsByPatient((prev) => ({ ...prev, [patientId]: [] }));
@@ -221,8 +370,8 @@ const DownloadModal = ({ setShowDownloadModal }) => {
     setShowPassword(false);
     setRecordExpanded({});
     if (will) {
-      // fetch fresh records each time the panel opens
-      fetchRecordsForPatient(id, { showToasts: false });
+      // fetch fresh records each time the panel opens, pass patient name for fallbacks
+      fetchRecordsForPatient(id, p.name, { showToasts: false });
     }
   };
 
@@ -544,7 +693,7 @@ const DownloadModal = ({ setShowDownloadModal }) => {
                                   title="Refresh records for this patient"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    fetchRecordsForPatient(p.$id, { showToasts: true });
+                                    fetchRecordsForPatient(p.$id, p.name, { showToasts: true });
                                   }}
                                   className="dm-btn dm-btn-ghost"
                                   style={{ marginLeft: 8 }}
