@@ -13,7 +13,7 @@ const storage = new Storage(client);
 const databaseId = import.meta.env.VITE_DATABASE_ID;
 const patientsCollectionId = import.meta.env.VITE_PATIENTS_COLLECTION_ID;
 const recordsCollectionId = import.meta.env.VITE_RECORDS_COLLECTION_ID;
-const bucketId = import.meta.env.VITE_BUCKET_ID; // ✅ Bucket ID for images
+const bucketId = import.meta.env.VITE_BUCKET_ID;
 
 export {
   client,

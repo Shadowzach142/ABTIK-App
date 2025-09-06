@@ -210,16 +210,25 @@ const PieChart = ({ data = [], size = 180, innerRatio = 0.55, onSliceClick, aria
         </g>
       </svg>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {data.map((d, i) => (
-          <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", cursor: onSliceClick ? "pointer" : "default" }} onClick={() => onSliceClick && onSliceClick(d)}>
-            <div style={{ width: 10, height: 10, background: d.color || PALETTE[i % PALETTE.length], borderRadius: 3 }} />
-            <div style={{ minWidth: 110 }}>{d.label}</div>
-            <div style={{ marginLeft: "auto", fontWeight: 700 }}>{d.count}</div>
-          </div>
+      <div className="">
+        <div className="">
+            {data.map((d, i) => (
+          <div
+            key={i}
+            className=""
+            onClick={() => onSliceClick && onSliceClick(d)}
+          >
+          <div
+            className="legend-color"
+            style={{ background: d.color || PALETTE[i % PALETTE.length] }}
+          />
+          <div className="legend-label">{d.label}</div>
+          <div className="legend-value">{d.count}</div>
+        </div>
         ))}
       </div>
     </div>
+  </div>
   );
 };
 
@@ -582,88 +591,60 @@ const AnalyticsPage = ({ setCurrentPage }) => {
   const percent = Math.round(((timeWindowMonths - sliderMin) / (sliderMax - sliderMin)) * 100);
   const sliderBackground = `linear-gradient(90deg, #0f172a ${percent}%, #e6edf3 ${percent}%)`;
 
+
+
+
+
+
+
+
+
+
+
   return (
-    <div style={{ padding: 18 }}>
-      <style>{`
-        input[type="range"].big-range {
-          -webkit-appearance: none;
-          appearance: none;
-          height: 10px;
-          border-radius: 999px;
-          outline: none;
-          margin: 0;
-          background: ${sliderBackground};
-          transition: background 220ms ease;
-        }
-        input[type="range"].big-range::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          appearance: none;
-          width: 22px;
-          height: 22px;
-          border-radius: 50%;
-          background: #fff;
-          border: 4px solid #0f172a;
-          box-shadow: 0 6px 18px rgba(2,6,23,0.12);
-          cursor: pointer;
-          margin-top: -6px;
-        }
-        .chart-fade { transition: opacity 360ms ease; }
-        .tooltip-box {
-          position: fixed;
-          pointer-events: none;
-          background: rgba(15,23,42,0.95);
-          color: #fff;
-          padding: 8px 10px;
-          border-radius: 6px;
-          font-size: 12px;
-          transform: translate(-50%, -120%);
-          white-space: nowrap;
-          box-shadow: 0 6px 18px rgba(2,6,23,0.12);
-          z-index: 99999;
-        }
-      `}</style>
-
-      {/* header + slider */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <div>
-          <div style={{ fontSize: 20, fontWeight: 700 }}>Disease Tracking</div>
-          <div style={{ color: "#64748b", marginTop: 2 }}>Analytics Dashboard</div>
+    <div className="analytics-root landing-page" style={{ ["--slider-bg"]: sliderBackground }}>
+      <div className="header">
+        <div className="title-block">
+          <div className="title">Analytics Dashboard</div>
         </div>
-        <div style={{ display: "flex", gap: 12, alignItems: "center", minWidth: 420 }}>
-          <div style={{ minWidth: 260 }}>
-            <label style={{ fontSize: 13, color: "#475569" }}>Time window (months)</label>
-            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              <input
-                aria-label="time window months"
-                type="range"
-                min={sliderMin}
-                max={sliderMax}
-                value={timeWindowMonths}
-                onChange={(e) => setTimeWindowMonths(Math.max(sliderMin, Math.min(sliderMax, Number(e.target.value))))}
-                className="big-range"
-                style={{ width: 320 }}
-              />
-              <div style={{ width: 68, textAlign: "center", fontWeight: 700 }}>{timeWindowMonths}</div>
+
+        <div className="slider-container">
+          <div className="slider-block">
+            <label className="slider-label">Time window (months)</label>
+              <div className="slider-row">
+                <input
+                  aria-label="time window months"
+                  type="range"
+                  min={sliderMin}
+                  max={sliderMax}
+                  value={timeWindowMonths}
+                  onChange={(e) =>
+                    setTimeWindowMonths(
+                      Math.max(sliderMin, Math.min(sliderMax, Number(e.target.value)))
+                    )
+                  }
+                  className="big-range"
+                />
+                <div className="slider-value">{timeWindowMonths}</div>
+              </div>
+
             </div>
+
           </div>
+      </div> {/* END OF HEADER */}
 
-          {setCurrentPage && (
-            <button onClick={() => setCurrentPage("landing")} className="btn btn-secondary">
-              Back to Home
-            </button>
-          )}
-        </div>
-      </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr 420px", gap: 18 }}>
-        {/* left: symptoms list */}
-        <div>
-          <div style={{ background: "#fff", padding: 12, borderRadius: 12, boxShadow: "0 6px 18px rgba(2,6,23,0.04)" }}>
-            <div style={{ fontWeight: 700 }}>Detected Symptoms</div>
-            <div style={{ color: "#64748b", marginTop: 6, marginBottom: 10 }}>From records in selected window</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div className="main-grid">
+        {/* OVERVIEW */}
+        <div className="col-1">
+          <div className="part-title">Detected Symptoms</div>
+            <div className="part-subtitle">From records in selected window</div>
+
+          <div className="overview-box">
+
+            <div className="symptoms-list">
               {diseasesList.length === 0 ? (
-                <div style={{ color: "#94a3b8" }}>No symptoms found</div>
+                <div className="symptoms-empty">No symptoms found</div>
               ) : (
                 diseasesList.map((d, i) => {
                   const selected = d.name === selectedDisease;
@@ -671,46 +652,69 @@ const AnalyticsPage = ({ setCurrentPage }) => {
                     <button
                       key={d.name}
                       onClick={() => setSelectedDisease(d.name)}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "10px",
-                        borderRadius: 8,
-                        border: selected ? "1px solid rgba(14,165,233,0.12)" : "1px solid transparent",
-                        background: selected ? "rgba(99,102,241,0.05)" : "#fff",
-                        cursor: "pointer",
-                      }}
+                      className={`symptom-button ${selected ? "selected" : ""}`}
                     >
                       <div>
-                        <div style={{ fontWeight: 700 }}>{d.name}</div>
-                        <div style={{ fontSize: 12, color: "#64748b" }}>{d.count.toLocaleString()} records</div>
+                        <div className="symptom-name">{d.name}</div>
+                        <div className="symptom-count">
+                          {d.count.toLocaleString()} records
+                        </div>
                       </div>
-                      <div style={{ width: 8, height: 8, borderRadius: 2, background: PALETTE[i % PALETTE.length] }} />
+
+                      <div
+                        className="symptom-color"
+                        style={{ background: PALETTE[i % PALETTE.length] }}
+                      />
                     </button>
                   );
                 })
               )}
             </div>
-          </div>
+            </div>
         </div>
 
-        {/* center: map + trend + affected */}
-        <div>
-          <div style={{ background: "#fff", borderRadius: 12, padding: 12, boxShadow: "0 6px 18px rgba(2,6,23,0.04)", marginBottom: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <div style={{ fontWeight: 700 }}>Disease Distribution Map</div>
-              <div style={{ color: "#64748b" }}>{selectedDisease || "—"}</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        {/* MAP, CHART, ARES, MOST AFFECTED */}
+        <div className="col-2">
+          <div className="col2-row">
+          <div className="card">
+            <div className="card-header">
+              <div className="part-title">Disease Distribution Map</div>
+              <div className="card-subtitle">{selectedDisease || "—"}</div>
             </div>
-            <div style={{ height: 380, position: "relative", borderRadius: 8, overflow: "hidden" }}>
+
+            <div className="map-box">
               {loading ? (
-                <div style={{ display: "grid", placeItems: "center", height: "100%", color: "#64748b" }}>Loading data…</div>
+                <div className="map-loading">Loading data…</div>
               ) : (
                 <>
-                  <MapContainer center={defaultCenter} zoom={6} style={{ height: "100%", width: "100%" }}>
-                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
+                  <MapContainer center={defaultCenter} zoom={6} className="map">
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution="&copy; OpenStreetMap contributors"
+                    />
+
                     {markers.map((m) => (
-                      <CircleMarker key={m.place} center={[m.coords.lat, m.coords.lng]} radius={6 + Math.sqrt(m.count) * 3} pathOptions={{ color: "#ef4444", fillColor: "#ef4444", fillOpacity: 0.85 }}>
+                      <CircleMarker
+                        key={m.place}
+                        center={[m.coords.lat, m.coords.lng]}
+                        radius={6 + Math.sqrt(m.count) * 3}
+                        pathOptions={{ color: "#ef4444", fillColor: "#ef4444", fillOpacity: 0.85 }}
+                      >
                         <Popup>
                           <div style={{ fontWeight: 700 }}>{m.place}</div>
                           <div>{m.count} records</div>
@@ -718,8 +722,9 @@ const AnalyticsPage = ({ setCurrentPage }) => {
                       </CircleMarker>
                     ))}
                   </MapContainer>
-                  <div style={{ position: "absolute", left: "50%", top: 8, transform: "translateX(-50%)" }}>
-                    <div style={{ background: "#fff", padding: 6, borderRadius: 999, boxShadow: "0 6px 12px rgba(2,6,23,0.06)" }}>
+
+                  <div className="map-pin-wrapper">
+                    <div className="map-pin-box">
                       <MapPin size={22} color="#1e40af" />
                     </div>
                   </div>
@@ -728,27 +733,35 @@ const AnalyticsPage = ({ setCurrentPage }) => {
             </div>
           </div>
 
-          <div style={{ background: "#fff", borderRadius: 12, padding: 12, boxShadow: "0 6px 18px rgba(2,6,23,0.04)", marginBottom: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <div style={{ fontWeight: 700 }}>{selectedDisease || "—"} - Trend</div>
-              <div style={{ color: "#64748b", fontSize: 13 }}>Monthly</div>
+
+
+          <div className="card">
+            <div className="card-header">
+              <div className="part-title">{selectedDisease || "—"} - Trend</div>
+              <div className="part-subtitle">Monthly</div>
             </div>
 
-            <div style={{ display: "flex", gap: 12 }}>
-              <div style={{ width: 56, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <div className="trend-row">
+              <div className="trend-y">
                 {yTicks
                   .slice()
                   .reverse()
                   .map((val, i) => (
-                    <div key={i} style={{ fontSize: 12, color: "#64748b" }}>
+                    <div key={i} className="trend-y-label">
                       {val}
                     </div>
                   ))}
               </div>
 
-              <div style={{ flex: 1, position: "relative" }}>
+              <div className="trend-chart">
                 <div ref={chartRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
-                  <svg viewBox={`0 0 ${spark.W} ${spark.H}`} style={{ width: "100%", height: "240px", display: "block", opacity: chartOpacity, transition: "opacity 360ms ease" }} preserveAspectRatio="xMidYMid meet">
+                  <svg
+                    viewBox={`0 0 ${spark.W} ${spark.H}`}
+                    className="chart-svg"
+                    preserveAspectRatio="xMidYMid meet"
+                    /* opacity is dynamic so keep just that inline */
+                    style={{ opacity: chartOpacity }}
+                  >
                     {yTicks.map((val, i) => {
                       const y = Math.round((1 - val / (spark.maxVal || 1)) * (spark.H - 36)) + 18;
                       return <line key={i} x1={0} x2={spark.W} y1={y} y2={y} stroke="#eef2f7" strokeWidth="1" />;
@@ -786,105 +799,165 @@ const AnalyticsPage = ({ setCurrentPage }) => {
                   </svg>
                 </div>
 
-                <div style={{ textAlign: "center", color: "#64748b", fontSize: 12, marginTop: 6 }}>Months (X) — Records (Y)</div>
+                <div className="chart-caption">Months (X) — Records (Y)</div>
 
                 {tooltip.show && (
+                  /* tooltip position is dynamic (left/top) so we must keep that inline */
                   <div className="tooltip-box" style={{ left: tooltip.x, top: tooltip.y }}>
-                    <div style={{ fontWeight: 700 }}>{tooltip.label}</div>
-                    <div style={{ opacity: 0.9 }}>{tooltip.value} record{tooltip.value !== 1 ? "s" : ""}</div>
+                    <div className="tooltip-title">{tooltip.label}</div>
+                    <div className="tooltip-value">
+                      {tooltip.value} record{tooltip.value !== 1 ? "s" : ""}
+                    </div>
                   </div>
                 )}
               </div>
             </div>
           </div>
+          </div>
 
-          <div style={{ background: "#fff", borderRadius: 12, padding: 12, boxShadow: "0 6px 18px rgba(2,6,23,0.04)" }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Most Affected Areas</div>
+
+
+
+
+
+
+
+
+
+            <div className="col2-row">
+            <div className="overview-box">
+            <div className="part-title">Most Affected Areas</div>
             <div>
               {affectedAreas.length === 0 ? (
-                <div style={{ color: "#94a3b8" }}>No data</div>
+                <div className="no-data">No data</div>
               ) : (
                 affectedAreas.map((a, idx) => {
                   const max = Math.max(...affectedAreas.map((x) => x.count), 1);
                   const pct = Math.round((a.count / max) * 100);
                   return (
-                    <div key={a.place} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                    <div key={a.place} className="affected-row">
                       <div>
-                        <div style={{ fontWeight: 700 }}>{a.place}</div>
-                        <div style={{ color: "#94a3b8", fontSize: 12 }}>#{idx + 1}</div>
+                        <div className="affected-name">{a.place}</div>
+                        <div className="affected-rank">#{idx + 1}</div>
                       </div>
-                      <div style={{ flex: "0 0 50%", display: "flex", gap: 10, alignItems: "center" }}>
-                        <div style={{ flex: 1, height: 10, background: "#f1f5f9", borderRadius: 6 }}>
-                          <div style={{ width: `${pct}%`, height: "100%", background: "#ef4444" }} />
+
+                      <div className="affected-bar-wrapper">
+                        <div className="affected-bar-bg">
+                          {/* fill width is dynamic, so keep inline */}
+                          <div className="affected-bar-fill" style={{ width: `${pct}%` }} />
                         </div>
-                        <div style={{ width: 40, textAlign: "right", fontWeight: 700 }}>{a.count}</div>
+                        <div className="affected-count">{a.count}</div>
                       </div>
                     </div>
                   );
                 })
               )}
             </div>
+            </div>
+
+
+              <div className="overview-box">
+                <div className="card-header">
+                  <div className="part-title">Top Areas</div>
+                  <div className="card-subtitle">{placeCounts.reduce((s, d) => s + d.count, 0)} total</div>
+                </div>
+              <div className=" ">
+                <PieChart
+                  data={placeCounts}
+                  size={180}
+                  innerRatio={0.6}
+                  onSliceClick={(d) => {
+                    if (d && d.label) {
+                    }
+                  }}
+                  ariaLabel="Top areas pie chart"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* right: pies + recent */}
-        <div style={{ display: "grid", gap: 12 }}>
-          <div style={{ background: "#fff", borderRadius: 12, padding: 12, boxShadow: "0 6px 18px rgba(2,6,23,0.04)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <div style={{ fontWeight: 700 }}>Top Symptoms (Pie)</div>
-              <div style={{ color: "#64748b" }}>{diseaseCounts.reduce((s, d) => s + d.count, 0)} total</div>
+
+
+
+        {/* CHOICES */}
+        <div className="col-3">
+          <div className="col3-dets">
+
+          <div className="part-title">Overview</div>
+            <div className="part-subtitle">Summary of key metrics</div>
+
+
+          <div className="overview-box">
+
+              <div className="card-header">
+                <div className="part-title">Top Symptoms</div>
+                <div className="card-subtitle">
+                  {diseaseCounts.reduce((s, d) => s + d.count, 0)} total
+                </div>
+              </div>
+
+            {/* SYMPTOMS BOX */}
+            <div className="top-symptoms-box">
+              {diseaseCounts.length === 0 ? (
+                <div className="no-data">No data</div>
+              ) : (
+                diseaseCounts.map((d, idx) => {
+                  const max = Math.max(...diseaseCounts.map((x) => x.count), 1);
+                  const pct = Math.round((d.count / max) * 100);
+                  return (
+                    <div key={d.label} className="bar-row">
+                      <div className="bar-info">
+                        <div className="bar-name">{d.label}</div>
+                        <div className="bar-rank">#{idx + 1}</div>
+                      </div>
+
+                      <div className="bar-wrapper">
+                        <div className="bar-bg">
+                          <div
+                            className="bar-fill"
+                            style={{ width: `${pct}%` }}
+                            onClick={() => setSelectedDisease(d.label)}
+                          />
+                        </div>
+                        <div className="bar-count">{d.count}</div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
             </div>
 
-            <PieChart
-              data={diseaseCounts}
-              size={220}
-              innerRatio={0.58}
-              onSliceClick={(d) => {
-                if (d && d.label) setSelectedDisease(d.label);
-              }}
-              ariaLabel="Top symptoms pie chart"
-            />
-          </div>
 
-          <div style={{ background: "#fff", borderRadius: 12, padding: 12, boxShadow: "0 6px 18px rgba(2,6,23,0.04)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <div style={{ fontWeight: 700 }}>Top Areas (Pie)</div>
-              <div style={{ color: "#64748b" }}>{placeCounts.reduce((s, d) => s + d.count, 0)} total</div>
-            </div>
+            <div className="overview-box">
+               <div className="part-title">Recent Reports (diseases)</div>
+              <div className="top-symptoms-box">
 
-            <PieChart
-              data={placeCounts}
-              size={220}
-              innerRatio={0.6}
-              onSliceClick={(d) => {
-                if (d && d.label) {
-                  // clicking area will try to filter by that place by setting selectedDisease to same (quick UX hack)
-                  // you can instead implement a place filter; for now we set selectedDisease to itself so map and trend remain unchanged
-                  // leave as no-op or implement place filter if desired
-                  // setSelectedPlace(d.label)
-                }
-              }}
-              ariaLabel="Top areas pie chart"
-            />
-          </div>
-
-          <div style={{ background: "#fff", borderRadius: 12, padding: 12, boxShadow: "0 6px 18px rgba(2,6,23,0.04)", minHeight: 300 }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Recent Reports (diseases)</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, overflowY: "auto", maxHeight: 700 }}>
               {recordsWithPatient.slice(0, 200).map((r, i) => (
-                <div key={i} style={{ background: "#fff", borderRadius: 8, padding: 8, border: "1px solid #f1f5f9" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ fontSize: 14 }}>• {compactSymptomsText(r)}</div>
-                    <div style={{ color: "#94a3b8", fontSize: 12 }}>{r.recorddate}</div>
+                <div key={i} className="recent-item">
+                  <div className="recent-row">
+                    <div className="recent-symptoms">• {compactSymptomsText(r)}</div>
+                    <div className="recent-date">{r.recorddate}</div>
                   </div>
                 </div>
               ))}
-              {recordsWithPatient.length === 0 && <div style={{ color: "#94a3b8" }}>No recent reports</div>}
+
+              {recordsWithPatient.length === 0 && <div className="no-data">No recent reports</div>}
             </div>
           </div>
+          </div>
         </div>
-      </div>
+
+
+
+
+
+
+
+      </div> {/* END OF MAIN GRID */}
     </div>
+
   );
 };
 

@@ -3,8 +3,15 @@
    ================================ */
 .landing-page {
   position: relative;
-  background: url("/path/to/your/background.jpg") no-repeat center/cover;
+  min-height: 100vh;
   overflow: hidden;
+  z-index: 0;
+
+  /* background layers: image + gradient fallback */
+  background:
+    url("/path/to/your/background.jpg") no-repeat center center,
+    linear-gradient(135deg, #dbebff 0%, #e3e8ff 100%);
+  background-size: cover, cover; /* ensures both fill */
 }
 
 .landing-page::after {
@@ -14,29 +21,22 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: url("/abtik.svg") no-repeat; /* or cover */
-  background-size: 150%; /* makes the bg pic bigger */
-  background-position: left -550px top -550px; /* moves it up and to the left */
+  background: url("/abtik.svg") no-repeat;
+  background-size: 150%;
+  background-position: left -550px top -550px;
   opacity: 0.2;
   pointer-events: none;
-  z-index: 1;
+  z-index: -1; /* overlay stays behind content */
 }
 
 .landing-container {
   position: relative;
-  z-index: 2; /* content stays above the SVG overlay */
-}
-
-.landing-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #dbeafe 0%, #c7d2fe 100%);
-}
-
-.landing-container {
-  max-width: 1200px;
+  z-index: 3; /* content above overlay */
+  max-width: 100%;
   margin: 0 auto;
   padding: 4rem 1rem;
 }
+
 
 .landing-header {
   text-align: center;
