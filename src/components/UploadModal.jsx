@@ -586,7 +586,7 @@ const UploadModal = ({ setShowUploadModal }) => {
                 </div>
 
                 <div>
-                  <label className="form-label">Place / Hospital</label>
+                  <label className="form-label">Place</label>
                   <input value={extracted.place || ""} onChange={(e) => setExtracted((p) => ({ ...(p || {}), place: e.target.value }))} className="form-input" />
                 </div>
 
