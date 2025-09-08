@@ -4,6 +4,8 @@ import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "../styles/analyticsPage.css";
 import "../styles/global.css";
+import "../styles/new.css";
+
 import { Client, Databases, Query } from "appwrite";
 import { MapPin } from "lucide-react";
 
@@ -242,6 +244,7 @@ const AnalyticsPage = ({ setCurrentPage }) => {
   const [placeCoords, setPlaceCoords] = useState({});
   const [timeWindowMonths, setTimeWindowMonths] = useState(12);
   const [error, setError] = useState(null);
+  const [sortMethod, setSortMethod] = useState("count");
 
   const [chartOpacity, setChartOpacity] = useState(1);
   const fetchDebounceRef = useRef(null);
@@ -402,6 +405,18 @@ const AnalyticsPage = ({ setCurrentPage }) => {
     arr.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
     return arr;
   }, [recordsWithPatient]);
+
+
+  const sortedDiseases = useMemo(() => {
+  if (!diseasesList) return [];
+  const arr = [...diseasesList];
+  if (sortMethod === "alpha") {
+    arr.sort((a, b) => a.name.localeCompare(b.name));
+  } else {
+    arr.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  }
+  return arr;
+}, [diseasesList, sortMethod]);
 
   useEffect(() => {
     if ((!selectedDisease || selectedDisease === "") && diseasesList.length > 0) {
@@ -593,6 +608,26 @@ const AnalyticsPage = ({ setCurrentPage }) => {
 
 
 
+    const [open, setOpen] = useState(false);
+  const ref = useRef();
+
+  const handleSelect = (value) => {
+    setSortMethod(value);
+    setOpen(false); // close dropdown after selecting
+  };
+
+  // Close if clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (ref.current && !ref.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+
 
 
 
@@ -602,99 +637,138 @@ const AnalyticsPage = ({ setCurrentPage }) => {
 
 
   return (
-    <div className="analytics-root landing-page" style={{ ["--slider-bg"]: sliderBackground }}>
-      <div className="header">
-        <div className="title-block">
-          <div className="title">Analytics Dashboard</div>
-        </div>
+    <div className="analytics-root " style={{ ["--slider-bg"]: sliderBackground }}>
+<div className="header">
+  <div className="title-block">
+    <div className="title">Analytics Dashboard</div>
+  </div>
 
-        <div className="slider-container">
-          <div className="slider-block">
-            <label className="slider-label">Time window (months)</label>
-              <div className="slider-row">
-                <input
-                  aria-label="time window months"
-                  type="range"
-                  min={sliderMin}
-                  max={sliderMax}
-                  value={timeWindowMonths}
-                  onChange={(e) =>
-                    setTimeWindowMonths(
-                      Math.max(sliderMin, Math.min(sliderMax, Number(e.target.value)))
-                    )
-                  }
-                  className="big-range"
-                />
-                <div className="slider-value">{timeWindowMonths}</div>
-              </div>
+  <div className="header-right">
+    <div className="slider-container">
+      <div className="slider-block">
+        <input
+              type="number"
+              min={sliderMin}
+              max={sliderMax}
+              value={timeWindowMonths}
+              onChange={(e) =>
+                setTimeWindowMonths(
+                  Math.max(sliderMin, Math.min(sliderMax, Number(e.target.value) || sliderMin))
+                )
+              }
+              className="slider-value-input"
+            />
+        <div className="slider-inner">
+          <label className="slider-label">Time window (months)</label>
 
-            </div>
+          <div className="slider-row">
 
-          </div>
-      </div> {/* END OF HEADER */}
+            <input
+              aria-label="time window months"
+              type="range"
+              min={sliderMin}
+              max={sliderMax}
+              value={timeWindowMonths}
+              onChange={(e) =>
+                setTimeWindowMonths(
+                  Math.max(sliderMin, Math.min(sliderMax, Number(e.target.value)))
+                )
+              }
+              className="big-range"
+            />
+               </div></div>
 
+
+
+      </div>
+    </div>
+
+    <button className="btn btn-primary" onClick={() => window.location.href = '/'}>
+      Return to Home
+    </button>
+  </div>
+</div> {/* END OF HEADER */}
+
+    <>
+
+      <div className=""></div>
 
       <div className="main-grid">
-        {/* OVERVIEW */}
         <div className="col-1">
-          <div className="part-title">Detected Symptoms</div>
-            <div className="part-subtitle">From records in selected window</div>
+            <div className="card-header">
+              <div className="card-subheader">
+                <div className="part-title">Top Symptoms</div>
+                <div className="part-subtitle">{diseaseCounts.reduce((s, d) => s + d.count, 0)} total</div>
+              </div>
+
+              <div className="custom-select" ref={ref}>
+                <div className="selected" onClick={() => setOpen(!open)}>
+                  {sortMethod === "count" ? "Sort by Cases" : "Sort Alphabetically"}
+                  <span className="arrow">{open ? "▲" : "▼"}</span>
+                </div>
+
+                {open && (
+                  <div className="options">
+                    <div onClick={() => handleSelect("count")}>Sort by Cases</div>
+                    <div onClick={() => handleSelect("alpha")}>Sort Alphabetically</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
 
           <div className="overview-box">
-
-            <div className="symptoms-list">
-              {diseasesList.length === 0 ? (
-                <div className="symptoms-empty">No symptoms found</div>
+            <div className="top-symptoms-box">
+              {sortedDiseases.length === 0 ? (
+                <div className="no-data">No data</div>
               ) : (
-                diseasesList.map((d, i) => {
+                sortedDiseases.map((d, idx) => {
+                  const max = Math.max(...sortedDiseases.map((x) => x.count), 1);
+                  const pct = Math.round((d.count / max) * 100);
                   const selected = d.name === selectedDisease;
+
                   return (
-                    <button
+                    <div
                       key={d.name}
+                      className={`bar-row ${selected ? "selected" : ""}`}
                       onClick={() => setSelectedDisease(d.name)}
-                      className={`symptom-button ${selected ? "selected" : ""}`}
                     >
-                      <div>
-                        <div className="symptom-name">{d.name}</div>
-                        <div className="symptom-count">
-                          {d.count.toLocaleString()} records
-                        </div>
+                      <div className="bar-info">
+                        {/* Optional color square */}
+                        <div
+                          className="color-box"
+                          style={{ background: PALETTE[idx % PALETTE.length] }}
+                        />
+                        <div className="bar-name">{d.name}</div>
                       </div>
 
-                      <div
-                        className="symptom-color"
-                        style={{ background: PALETTE[i % PALETTE.length] }}
-                      />
-                    </button>
-                  );
-                })
-              )}
+                      <div className="bar-wrapper">
+                        <div className="bar-bg">
+                          <div
+                            className="bar-fill"
+                            style={{
+                              width: `${pct}%`,
+                              background: PALETTE[idx % PALETTE.length],
+                            }}
+                          />
+                        </div>
+                        <div className="bar-count">{d.count.toLocaleString()}</div>
+                      </div>
+                    </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
-            </div>
-        </div>
+          </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        {/* MAP, CHART, ARES, MOST AFFECTED */}
         <div className="col-2">
-          <div className="col2-row">
           <div className="card">
             <div className="card-header">
-              <div className="part-title">Disease Distribution Map</div>
-              <div className="card-subtitle">{selectedDisease || "—"}</div>
+              <div className="card-subheader">
+                <div className="part-title">Disease Distribution Map</div>
+                <div className="part-map-title">{ selectedDisease || "—"}</div>
+              </div>
             </div>
 
             <div className="map-box">
@@ -734,11 +808,12 @@ const AnalyticsPage = ({ setCurrentPage }) => {
           </div>
 
 
-
-          <div className="card">
-            <div className="card-header">
-              <div className="part-title">{selectedDisease || "—"} - Trend</div>
-              <div className="part-subtitle">Monthly</div>
+          <div className="card trend-card">
+            <div className="card-subheader">
+              <div className="">
+                <div className="part-title">{selectedDisease || "—"} - Trend</div>
+                <div className="part-subtitle">Monthly</div>
+              </div>
             </div>
 
             <div className="trend-row">
@@ -755,54 +830,58 @@ const AnalyticsPage = ({ setCurrentPage }) => {
 
               <div className="trend-chart">
                 <div ref={chartRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
-                  <svg
-                    viewBox={`0 0 ${spark.W} ${spark.H}`}
-                    className="chart-svg"
-                    preserveAspectRatio="xMidYMid meet"
-                    /* opacity is dynamic so keep just that inline */
-                    style={{ opacity: chartOpacity }}
-                  >
-                    {yTicks.map((val, i) => {
-                      const y = Math.round((1 - val / (spark.maxVal || 1)) * (spark.H - 36)) + 18;
-                      return <line key={i} x1={0} x2={spark.W} y1={y} y2={y} stroke="#eef2f7" strokeWidth="1" />;
-                    })}
+                  <div className="chart-container">
+                    <svg
+                      viewBox={`0 0 ${spark.W} ${spark.H}`}
+                      className="chart-svg"
+                      preserveAspectRatio="xMidYMid meet"
+                      style={{ opacity: chartOpacity }}
+                    >
+                      {yTicks.map((val, i) => {
+                        const y = Math.round((1 - val / (spark.maxVal || 1)) * (spark.H - 36)) + 18;
+                        return <line key={i} x1={0} x2={spark.W} y1={y} y2={y} stroke="#eef2f7" strokeWidth="1" />;
+                      })}
 
-                    <path d={spark.area} fill="#ef4444" opacity="0.06" />
-                    <path d={spark.d} fill="none" stroke="#ef4444" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
+                      <path d={spark.area} fill="#ef4444" opacity="0.06" />
+                      <path d={spark.d} fill="none" stroke="#ef4444" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
 
-                    {spark.pts.map((p, idx) => (
-                      <g key={idx}>
-                        <circle cx={p[0]} cy={p[1]} r={3.6} fill="#ef4444" stroke="#fff" strokeWidth="0.8" />
-                        {shouldShowPointLabel(idx, p[2]) && (
-                          <text x={p[0]} y={p[1] - 10} fontSize="11" fill="#0f172a" fontWeight="700" textAnchor="middle">
-                            {p[2]}
-                          </text>
-                        )}
-                      </g>
-                    ))}
-
-                    {xTicks.map((t, i) => {
-                      const idx = t.idx;
-                      if (!spark.pts || !spark.pts[idx]) return null;
-                      const x = spark.pts[idx][0];
-                      const dt = new Date(t.date);
-                      const label = dt.toLocaleString("en-US", { month: "short", year: "2-digit" });
-                      return (
-                        <g key={i} transform={`translate(${x},0)`}>
-                          <line x1={0} x2={0} y1={spark.H - 36} y2={spark.H - 18} stroke="#e6edf3" strokeWidth="1" />
-                          <text x={0} y={spark.H - 4} fontSize="11" fill="#64748b" textAnchor="middle">
-                            {label}
-                          </text>
+                      {spark.pts.map((p, idx) => (
+                        <g key={idx}>
+                          <circle cx={p[0]} cy={p[1]} r={3.6} fill="#ef4444" stroke="#fff" strokeWidth="0.8" />
+                          {shouldShowPointLabel(idx, p[2]) && (
+                            <text x={p[0]} y={p[1] - 10} fontSize="11" fill="#0f172a" fontWeight="700" textAnchor="middle">
+                              {p[2]}
+                            </text>
+                          )}
                         </g>
-                      );
-                    })}
-                  </svg>
+                      ))}
+
+                      {xTicks.map((t, i) => {
+                        const idx = t.idx;
+                        if (!spark.pts || !spark.pts[idx]) return null;
+                        const x = spark.pts[idx][0];
+                        const dt = new Date(t.date);
+                        const label = dt.toLocaleString("en-US", { month: "short", year: "2-digit" });
+                        return (
+                          <g key={i} transform={`translate(${x},0)`}>
+                            <line x1={0} x2={0} y1={spark.H - 36} y2={spark.H - 18} stroke="#e6edf3" strokeWidth="1" />
+                            <text x={0} y={spark.H - 4} fontSize="11" fill="#64748b" textAnchor="middle">
+                              {label}
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+
+
+
+                  </div>
                 </div>
 
-                <div className="chart-caption">Months (X) — Records (Y)</div>
-
+              </div>
+            </div>
+            <div className="chart-caption">Months (X) — Records (Y)</div>
                 {tooltip.show && (
-                  /* tooltip position is dynamic (left/top) so we must keep that inline */
                   <div className="tooltip-box" style={{ left: tooltip.x, top: tooltip.y }}>
                     <div className="tooltip-title">{tooltip.label}</div>
                     <div className="tooltip-value">
@@ -810,53 +889,11 @@ const AnalyticsPage = ({ setCurrentPage }) => {
                     </div>
                   </div>
                 )}
-              </div>
-            </div>
           </div>
-          </div>
+        </div>
 
-
-
-
-
-
-
-
-
-
-            <div className="col2-row">
-            <div className="overview-box">
-            <div className="part-title">Most Affected Areas</div>
-            <div>
-              {affectedAreas.length === 0 ? (
-                <div className="no-data">No data</div>
-              ) : (
-                affectedAreas.map((a, idx) => {
-                  const max = Math.max(...affectedAreas.map((x) => x.count), 1);
-                  const pct = Math.round((a.count / max) * 100);
-                  return (
-                    <div key={a.place} className="affected-row">
-                      <div>
-                        <div className="affected-name">{a.place}</div>
-                        <div className="affected-rank">#{idx + 1}</div>
-                      </div>
-
-                      <div className="affected-bar-wrapper">
-                        <div className="affected-bar-bg">
-                          {/* fill width is dynamic, so keep inline */}
-                          <div className="affected-bar-fill" style={{ width: `${pct}%` }} />
-                        </div>
-                        <div className="affected-count">{a.count}</div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-            </div>
-
-
-              <div className="overview-box">
+        <div className="col-3">
+          <div className="overview-box">
                 <div className="card-header">
                   <div className="part-title">Top Areas</div>
                   <div className="card-subtitle">{placeCounts.reduce((s, d) => s + d.count, 0)} total</div>
@@ -874,66 +911,12 @@ const AnalyticsPage = ({ setCurrentPage }) => {
                 />
               </div>
             </div>
-          </div>
-        </div>
 
-
-
-
-        {/* CHOICES */}
-        <div className="col-3">
-          <div className="col3-dets">
-
-          <div className="part-title">Overview</div>
-            <div className="part-subtitle">Summary of key metrics</div>
-
-
-          <div className="overview-box">
-
-              <div className="card-header">
-                <div className="part-title">Top Symptoms</div>
-                <div className="card-subtitle">
-                  {diseaseCounts.reduce((s, d) => s + d.count, 0)} total
-                </div>
-              </div>
-
-            {/* SYMPTOMS BOX */}
-            <div className="top-symptoms-box">
-              {diseaseCounts.length === 0 ? (
-                <div className="no-data">No data</div>
-              ) : (
-                diseaseCounts.map((d, idx) => {
-                  const max = Math.max(...diseaseCounts.map((x) => x.count), 1);
-                  const pct = Math.round((d.count / max) * 100);
-                  return (
-                    <div key={d.label} className="bar-row">
-                      <div className="bar-info">
-                        <div className="bar-name">{d.label}</div>
-                        <div className="bar-rank">#{idx + 1}</div>
-                      </div>
-
-                      <div className="bar-wrapper">
-                        <div className="bar-bg">
-                          <div
-                            className="bar-fill"
-                            style={{ width: `${pct}%` }}
-                            onClick={() => setSelectedDisease(d.label)}
-                          />
-                        </div>
-                        <div className="bar-count">{d.count}</div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-            </div>
 
 
             <div className="overview-box">
-               <div className="part-title">Recent Reports (diseases)</div>
+              <div className="part-title">Recent Reports (diseases)</div>
               <div className="top-symptoms-box">
-
               {recordsWithPatient.slice(0, 200).map((r, i) => (
                 <div key={i} className="recent-item">
                   <div className="recent-row">
@@ -942,10 +925,8 @@ const AnalyticsPage = ({ setCurrentPage }) => {
                   </div>
                 </div>
               ))}
-
               {recordsWithPatient.length === 0 && <div className="no-data">No recent reports</div>}
             </div>
-          </div>
           </div>
         </div>
 
@@ -955,10 +936,15 @@ const AnalyticsPage = ({ setCurrentPage }) => {
 
 
 
+
+
+
+
+
       </div> {/* END OF MAIN GRID */}
+      </>
     </div>
 
   );
 };
-
 export default AnalyticsPage;

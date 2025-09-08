@@ -15,7 +15,7 @@ const App = () => {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
 
   return (
-    <div className="app landing-page">
+    <div className="app">
       {currentPage === "landing" && (
         <LandingPage
           setCurrentPage={setCurrentPage}
