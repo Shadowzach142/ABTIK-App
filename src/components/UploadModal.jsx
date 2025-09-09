@@ -10,6 +10,7 @@ import { Client, Databases, Storage, Permission, Role, Query } from "appwrite";
  * - Adds `name` into created record documents
  * - Ensures DOB and recorddate are stored in MM-DD-YYYY
  * - Keeps robust dedupe & append logic
+ * - Adds subtle animations (no layout/size changes)
  */
 
 // ---------- Env / Appwrite setup ----------
@@ -494,12 +495,12 @@ const UploadModal = ({ setShowUploadModal }) => {
   // ---------- Render ----------
   return (
     <>
-      <div className="modal-outer">
-        <div className="modal">
+      <div className="modal-outer" aria-hidden={false}>
+        <div className="modal modal-animated" role="dialog" aria-modal="true" aria-label="Upload Medical Form">
           <div className="modal-header">
             <h2 className="modal-title">Upload Medical Form</h2>
             <div>
-              <button onClick={() => setShowUploadModal(false)} className="btn-close">
+              <button onClick={() => setShowUploadModal(false)} className="btn-close" aria-label="Close modal">
                 <X size={24} />
               </button>
             </div>
@@ -507,11 +508,14 @@ const UploadModal = ({ setShowUploadModal }) => {
 
           <div className="modal-body">
             <div
-              className="upload-area"
+              className={`upload-area upload-area-animated ${file ? "has-file" : ""}`}
               onClick={() => document.getElementById("um-file-input")?.click()}
               title="Click to choose file"
             >
-              <Upload className="upload-icon" />
+              <div className="upload-icon-wrap">
+                <Upload className="upload-icon upload-icon-bounce" />
+              </div>
+
               <div>
                 <div className="file-name">{file ? file.name : "Click to select or drop a scanned form"}</div>
                 <div className="file-hint">{file ? `${(file.size / 1024).toFixed(1)} KB` : "PNG/JPG preferred"}</div>
@@ -520,7 +524,12 @@ const UploadModal = ({ setShowUploadModal }) => {
             </div>
 
             <div className="action-row">
-              <button onClick={handleProcess} className="btn btn-primary" disabled={!file || loading}>
+              <button
+                onClick={handleProcess}
+                className="btn btn-primary btn-animated"
+                disabled={!file || loading}
+                aria-disabled={!file || loading}
+              >
                 {loading ? "Processing..." : "Process"}
               </button>
 
@@ -531,21 +540,21 @@ const UploadModal = ({ setShowUploadModal }) => {
                   setOcrText("");
                   setUploadedUrl(null);
                 }}
-                className="btn btn-secondary"
+                className="btn btn-secondary btn-animated"
               >
                 Reset
               </button>
             </div>
 
             {ocrText && (
-              <div className="ocr-preview">
+              <div className="ocr-preview ocr-preview-animated" aria-live="polite">
                 <strong>OCR Preview</strong>
                 <div className="ocr-text">{ocrText}</div>
               </div>
             )}
 
             {extracted && (
-              <div className="extracted">
+              <div className="extracted extracted-animated" role="region" aria-label="Extracted data">
                 <strong>Extracted Data (editable)</strong>
 
                 <div>
@@ -613,14 +622,14 @@ const UploadModal = ({ setShowUploadModal }) => {
                 </div>
 
                 {uploadedUrl && (
-                  <div>
+                  <div className="uploaded-preview uploaded-preview-animated">
                     <label className="form-label">Uploaded image preview</label>
-                    <img src={uploadedUrl} alt="uploaded" className="uploaded-img" />
+                    <img src={uploadedUrl} alt="uploaded" className="uploaded-img uploaded-img-fade" />
                   </div>
                 )}
 
                 <div className="footer-actions">
-                  <button onClick={() => setShowUploadModal(false)} className="btn btn-reset">
+                  <button onClick={() => setShowUploadModal(false)} className="btn btn-reset btn-animated">
                     Close
                   </button>
                   <button
@@ -633,8 +642,9 @@ const UploadModal = ({ setShowUploadModal }) => {
                       }
                       await handleUploadAndCreateRecord();
                     }}
-                    className="btn btn-primary"
+                    className="btn btn-primary btn-animated"
                     disabled={creatingRecord || loading}
+                    aria-disabled={creatingRecord || loading}
                   >
                     {creatingRecord ? "Saving..." : "Upload & Save Record"}
                   </button>
@@ -658,45 +668,120 @@ const UploadModal = ({ setShowUploadModal }) => {
         }}
       >
         {toasts.map((t) => (
-          <div
-            key={t.id}
-            style={{
-              display: "flex",
-              gap: 12,
-              alignItems: "flex-start",
-              background: t.type === "success" ? "#ecfdf5" : t.type === "error" ? "#fff1f2" : "#eff6ff",
-              border: `1px solid ${t.type === "success" ? "#34d399" : t.type === "error" ? "#fb7185" : "#60a5fa"}`,
-              padding: "10px 12px",
-              borderRadius: 10,
-              boxShadow: "0 6px 18px rgba(2,6,23,0.06)",
-              minWidth: 300,
-            }}
-          >
+          <div key={t.id} className="toast-animated" style={{ animation: "toastIn .16s ease-out" }}>
             <div
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 8,
-                display: "grid",
-                placeItems: "center",
-                background: t.type === "success" ? "#bbf7d0" : t.type === "error" ? "#fecaca" : "#dbeafe",
-                flex: "0 0 40px",
+                display: "flex",
+                gap: 12,
+                alignItems: "flex-start",
+                background: t.type === "success" ? "#ecfdf5" : t.type === "error" ? "#fff1f2" : "#eff6ff",
+                border: `1px solid ${t.type === "success" ? "#34d399" : t.type === "error" ? "#fb7185" : "#60a5fa"}`,
+                padding: "10px 12px",
+                borderRadius: 10,
+                boxShadow: "0 6px 18px rgba(2,6,23,0.06)",
+                minWidth: 300,
               }}
             >
-              {t.type === "success" ? <Check size={18} color="#065f46" /> : t.type === "error" ? <AlertTriangle size={18} color="#7f1d1d" /> : <Check size={18} color="#1e3a8a" />}
-            </div>
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 8,
+                  display: "grid",
+                  placeItems: "center",
+                  background: t.type === "success" ? "#bbf7d0" : t.type === "error" ? "#fecaca" : "#dbeafe",
+                  flex: "0 0 40px",
+                }}
+              >
+                {t.type === "success" ? <Check size={18} color="#065f46" /> : t.type === "error" ? <AlertTriangle size={18} color="#7f1d1d" /> : <Check size={18} color="#1e3a8a" />}
+              </div>
 
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700 }}>{t.title}</div>
-              {t.message && <div style={{ marginTop: 6, opacity: 0.95 }}>{t.message}</div>}
-            </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700 }}>{t.title}</div>
+                {t.message && <div style={{ marginTop: 6, opacity: 0.95 }}>{t.message}</div>}
+              </div>
 
-            <button onClick={() => removeToast(t.id)} aria-label="Close toast" style={{ background: "transparent", border: "none", cursor: "pointer" }}>
-              <X size={14} />
-            </button>
+              <button onClick={() => removeToast(t.id)} aria-label="Close toast" style={{ background: "transparent", border: "none", cursor: "pointer" }}>
+                <X size={14} />
+              </button>
+            </div>
           </div>
         ))}
       </div>
+
+      {/* Inline animations (keeps everything bundled - doesn't change sizes/layout) */}
+      <style>{`
+        /* Modal entrance */
+        .modal-animated {
+          animation: modalScaleIn 220ms cubic-bezier(.2,.9,.3,1);
+        }
+        @keyframes modalScaleIn {
+          0% { transform: translateY(10px) scale(.995); opacity: 0; }
+          100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        /* Upload area hover & focus */
+        .upload-area {
+          transition: box-shadow .18s ease, transform .18s ease, background .18s ease;
+          border-radius: 10px;
+        }
+        .upload-area:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(2,6,23,0.06); }
+        .upload-area:active { transform: translateY(-2px); }
+
+        /* Upload icon bounce */
+        .upload-icon-bounce {
+          animation: uploadIconFloat 2200ms ease-in-out infinite;
+        }
+        @keyframes uploadIconFloat {
+          0% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+          100% { transform: translateY(0); }
+        }
+
+        /* small pulse when file selected */
+        .upload-area.has-file { animation: uploadAreaPulse .9s ease-out 1; }
+        @keyframes uploadAreaPulse {
+          0% { box-shadow: 0 0 0 rgba(37,99,235,0); }
+          50% { box-shadow: 0 8px 30px rgba(37,99,235,0.06); }
+          100% { box-shadow: 0 0 0 rgba(37,99,235,0); }
+        }
+
+        /* Action buttons hover - keep dimensions same */
+        .btn-animated { transition: transform .12s ease, box-shadow .12s ease; }
+        .btn-animated:hover { transform: translateY(-3px); box-shadow: 0 8px 22px rgba(2,6,23,0.06); }
+
+        /* extracted panel reveal */
+        .extracted-animated { animation: slideDownFade .26s cubic-bezier(.2,.9,.3,1); border-radius: 8px; }
+        .ocr-preview-animated { animation: slideDownFade .22s cubic-bezier(.2,.9,.3,1); }
+        @keyframes slideDownFade {
+          0% { transform: translateY(-6px); opacity: 0; }
+          100% { transform: translateY(0); opacity: 1; }
+        }
+
+        /* uploaded image fade */
+        .uploaded-img-fade { animation: imageFadeIn .28s ease-out both; border-radius: 6px; }
+        @keyframes imageFadeIn {
+          from { opacity: 0; transform: scale(.995); }
+          to { opacity: 1; transform: scale(1); }
+        }
+
+        /* toast */
+        @keyframes toastIn {
+          from { transform: translateY(-6px) scale(.995); opacity: 0; }
+          to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        .toast-animated { will-change: transform, opacity; }
+
+        /* subtle focus outlines for accessibility without changing size */
+        .form-input:focus, .form-textarea:focus {
+          outline: 3px solid rgba(37,99,235,0.08);
+          box-shadow: 0 6px 18px rgba(2,6,23,0.04);
+        }
+
+        /* keep existing uploaded-img sizing intact - animations don't affect dimensions */
+        .uploaded-img { max-width: 100%; border-radius: 8px; display: block; }
+
+      `}</style>
     </>
   );
 };

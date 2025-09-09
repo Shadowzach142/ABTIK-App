@@ -23,7 +23,8 @@ import {
   EyeOff,
   Check,
   AlertTriangle,
-  RefreshCw,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 
 /* ---------- Appwrite setup (use your env vars) ---------- */
@@ -100,9 +101,7 @@ const matchesPatientId = (r, patientId) => {
   if (!r || !patientId) return false;
   if (typeof r.patientsid === "string") return r.patientsid === patientId;
   if (r.patientsid && typeof r.patientsid === "object") {
-    // support embedded doc shape or object with $id
     if (r.patientsid.$id) return r.patientsid.$id === patientId;
-    // other shapes: try toString
     try {
       return String(r.patientsid) === String(patientId);
     } catch {
@@ -183,7 +182,6 @@ const DownloadModal = ({ setShowDownloadModal }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [patients, setPatients] = useState([]);
   const [loadingPatients, setLoadingPatients] = useState(false);
-  const [expandedId, setExpandedId] = useState(null);
   const [recordsByPatient, setRecordsByPatient] = useState({});
   const [recordsLoading, setRecordsLoading] = useState({});
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -192,6 +190,9 @@ const DownloadModal = ({ setShowDownloadModal }) => {
   const [recordExpanded, setRecordExpanded] = useState({});
   const [uploadingProfile, setUploadingProfile] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // focused view state (new): when set we show only the selected patient's full panel
+  const [focusedPatientId, setFocusedPatientId] = useState(null);
 
   // Toasts
   const [toasts, setToasts] = useState([]);
@@ -213,9 +214,8 @@ const DownloadModal = ({ setShowDownloadModal }) => {
         const pid = e?.detail?.patientId;
         console.log("DownloadModal received records:updated event, patientId:", pid);
         if (pid) {
-          const p = patients.find((x) => x.$id === pid);
-          fetchRecordsForPatient(pid, p?.name, { showToasts: true });
-        } else if (selectedPatient?.$id) fetchRecordsForPatient(selectedPatient.$id, selectedPatient.name, { showToasts: true });
+          fetchRecordsForPatient(pid, null, { showToasts: true });
+        } else if (focusedPatientId) fetchRecordsForPatient(focusedPatientId, null, { showToasts: true });
       } catch (err) {
         console.warn("Error handling records:updated event", err);
       }
@@ -227,10 +227,8 @@ const DownloadModal = ({ setShowDownloadModal }) => {
         const data = ev.newValue ? JSON.parse(ev.newValue) : null;
         const pid = data?.patientId;
         console.log("DownloadModal storage event records-updated:", pid);
-        if (pid) {
-          const p = patients.find((x) => x.$id === pid);
-          fetchRecordsForPatient(pid, p?.name, { showToasts: true });
-        } else if (selectedPatient?.$id) fetchRecordsForPatient(selectedPatient.$id, selectedPatient.name, { showToasts: true });
+        if (pid) fetchRecordsForPatient(pid, null, { showToasts: true });
+        else if (focusedPatientId) fetchRecordsForPatient(focusedPatientId, null, { showToasts: true });
       } catch (err) {
         console.warn("Error handling storage records-updated event", err);
       }
@@ -244,7 +242,7 @@ const DownloadModal = ({ setShowDownloadModal }) => {
       window.removeEventListener("storage", handleStorage);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPatient, patients]);
+  }, [focusedPatientId, patients]);
 
   // Debounced search — fetch fresh patients from Appwrite each time
   useEffect(() => {
@@ -263,9 +261,7 @@ const DownloadModal = ({ setShowDownloadModal }) => {
     try {
       // request up to 1000 docs (adjust if you expect >1000)
       const res = await databases.listDocuments(DATABASE_ID, PATIENTS_COL, [Query.limit(1000)]);
-      console.log("Appwrite patients raw:", res);
       const filtered = (res.documents || []).filter((d) => (d.name || "").toLowerCase().includes(q.toLowerCase()));
-      console.log("Filtered results:", filtered);
       setPatients(filtered);
     } catch (err) {
       console.error("Error fetching patients:", err);
@@ -290,7 +286,6 @@ const DownloadModal = ({ setShowDownloadModal }) => {
     if (showToasts) showToast({ type: "info", title: "Refreshing", message: "Fetching latest records..." });
 
     try {
-      // Parallel attempts: by patientsid and by name (if name provided)
       let byPatientsId = [];
       let byName = [];
 
@@ -328,7 +323,6 @@ const DownloadModal = ({ setShowDownloadModal }) => {
       const broad = await databases.listDocuments(DATABASE_ID, RECORDS_COL, [Query.limit(1000)]);
       const allRecords = broad.documents || [];
 
-      // Filter records that match patientsid OR have a name match to patientName
       const matched = allRecords.filter((r) => {
         if (matchesPatientId(r, patientId)) return true;
         if (patientName && r.name) {
@@ -336,7 +330,6 @@ const DownloadModal = ({ setShowDownloadModal }) => {
           const pNorm = normalizeName(patientName || "");
           if (!rn || !pNorm) return false;
           if (rn === pNorm) return true;
-          // token containment: every token in patientName appears in record name
           const tokens = pNorm.split(" ").filter(Boolean);
           return tokens.length > 0 && tokens.every((t) => rn.includes(t));
         }
@@ -360,21 +353,27 @@ const DownloadModal = ({ setShowDownloadModal }) => {
     }
   };
 
-  const handleTogglePatient = (p) => {
-    const id = p.$id;
-    const will = expandedId !== id ? id : null;
-    setExpandedId(will);
-    setSelectedPatient(will ? p : null);
+  // ---------- New: open focused patient view ----------
+  const openPatientFocused = (p) => {
+    if (!p) return;
+    setFocusedPatientId(p.$id);
+    setSelectedPatient(p);
     setIsEditing(false);
     setEditedPatient(null);
     setShowPassword(false);
     setRecordExpanded({});
-    if (will) {
-      // fetch fresh records each time the panel opens, pass patient name for fallbacks
-      fetchRecordsForPatient(id, p.name, { showToasts: false });
-    }
+    fetchRecordsForPatient(p.$id, p.name, { showToasts: false });
   };
 
+  const closeFocusedView = () => {
+    setFocusedPatientId(null);
+    setSelectedPatient(null);
+    setIsEditing(false);
+    setEditedPatient(null);
+    setRecordExpanded({});
+  };
+
+  // Keep toggleRecord for accordions
   const toggleRecord = (recordId) => setRecordExpanded((prev) => ({ ...prev, [recordId]: !prev[recordId] }));
 
   // Start editing a patient
@@ -384,7 +383,6 @@ const DownloadModal = ({ setShowDownloadModal }) => {
     setEditedPatient({ ...patient });
     setIsEditing(true);
     setShowPassword(false);
-    console.log("Edit started for patient:", patient.$id);
   };
 
   const handleInputChange = (field, value) => {
@@ -394,16 +392,13 @@ const DownloadModal = ({ setShowDownloadModal }) => {
   // Upload file helper
   const uploadProfileFile = async (file) => {
     if (!BUCKET_ID) {
-      console.warn("BUCKET_ID not set - uploads disabled");
       showToast({ type: "info", title: "Uploads disabled", message: "Set VITE_BUCKET_ID to enable file uploads." });
       return null;
     }
     try {
       setUploadingProfile(true);
       const uniqueId = `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
-      console.log("Uploading file to bucket:", BUCKET_ID, "fileId:", uniqueId);
       const result = await storage.createFile(BUCKET_ID, uniqueId, file);
-      console.log("Storage.createFile result:", result);
       const viewUrl = `${ENDPOINT}/storage/buckets/${BUCKET_ID}/files/${result.$id}/view?project=${PROJECT_ID}`;
       showToast({ type: "success", title: "Upload complete", message: "Profile image uploaded." });
       return { viewUrl, fileId: result.$id };
@@ -438,9 +433,7 @@ const DownloadModal = ({ setShowDownloadModal }) => {
     if (!uploadResult) return;
 
     try {
-      console.log("Updating patient profile attribute:", patientId, uploadResult.viewUrl);
       const updated = await databases.updateDocument(DATABASE_ID, PATIENTS_COL, patientId, { profile: uploadResult.viewUrl });
-      console.log("Updated patient doc (profile):", updated);
       setPatients((prev) => prev.map((p) => (p.$id === updated.$id ? updated : p)));
       setSelectedPatient((prev) => (prev && prev.$id === updated.$id ? updated : prev));
       setEditedPatient((prev) =>
@@ -456,7 +449,6 @@ const DownloadModal = ({ setShowDownloadModal }) => {
   // Save edited fields to Appwrite
   const handleSave = async () => {
     if (!editedPatient && !selectedPatient) {
-      console.warn("No editedPatient or selectedPatient present on Save");
       showToast({ type: "info", title: "Nothing to save", message: "Open Edit to modify fields first." });
       return;
     }
@@ -465,19 +457,16 @@ const DownloadModal = ({ setShowDownloadModal }) => {
     const docId = docToSave.$id || (selectedPatient && selectedPatient.$id);
 
     if (!docId) {
-      console.error("Missing document ID — cannot save");
       showToast({ type: "error", title: "Save failed", message: "Missing document ID." });
       return;
     }
 
-    // Clean phone
     const cleanedPhone = cleanInteger(docToSave.phonenumber);
     if (docToSave.phonenumber && cleanedPhone === null) {
       showToast({ type: "error", title: "Invalid phone", message: "Phone must contain digits only." });
       return;
     }
 
-    // Build payload
     const payload = {
       name: docToSave.name,
       dateofbirth: docToSave.dateofbirth,
@@ -491,15 +480,12 @@ const DownloadModal = ({ setShowDownloadModal }) => {
     if (docToSave.profile) payload.profile = docToSave.profile;
 
     if (docToSave.password !== undefined && docToSave.password !== null && docToSave.password !== "") {
-      console.log("Password provided — will include in update payload (value not logged).");
       payload.password = docToSave.password;
       console.warn("Storing plaintext passwords is insecure. Consider a safer approach.");
     }
 
-    console.log("Saving patient payload for id:", docId, { ...payload, _maskedPassword: payload.password ? true : false });
     try {
       const updated = await databases.updateDocument(DATABASE_ID, PATIENTS_COL, docId, payload);
-      console.log("Save succeeded, updated doc:", updated);
       setPatients((prev) => prev.map((p) => (p.$id === updated.$id ? updated : p)));
       setSelectedPatient(updated);
       setEditedPatient(null);
@@ -520,275 +506,241 @@ const DownloadModal = ({ setShowDownloadModal }) => {
     return null;
   }, [searchQuery, loadingPatients, patients]);
 
+  // ---------- Render helpers ----------
+  const renderPatientCard = (p) => (
+    <div key={p.$id} className="dm-card card-animated" onClick={() => openPatientFocused(p)} role="button" tabIndex={0}>
+      <div className="dm-card-header">
+        <div className="dm-card-left">
+          <div className="dm-avatar-box">
+            {p.profile ? <img src={p.profile} alt="profile" className="dm-avatar" /> : <User size={20} />}
+          </div>
+          <div>
+            <div className="dm-card-name">{p.name}</div>
+            <div className="dm-card-sub">{p.place || "—"} • Last: {p.lastvisited || "—"}</div>
+          </div>
+        </div>
+        <div>
+          <ArrowRight size={18} />
+        </div>
+      </div>
+    </div>
+  );
+
+  const focusedPatientRecords = selectedPatient ? recordsByPatient[selectedPatient.$id] || [] : [];
+
+  // ---------- Main render ----------
   return (
     <>
       <div className="modal-overlay">
-        <div className="modal">
+        <div className="modal modal-animated" role="dialog" aria-modal="true" aria-label="Patient Records">
           {/* header */}
           <div className="modal-header">
             <h2 className="modal-title">Patient Records</h2>
-            <button onClick={() => setShowDownloadModal(false)} className="btn-close">
+            <button onClick={() => setShowDownloadModal(false)} className="btn-close" aria-label="Close modal">
               <X size={24} />
             </button>
           </div>
+
           <div>
-            <div className="modal-search">
-              <Search size={18} />
-              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search patient by name..." />
-            </div>
+            {/* HIDE SEARCH BAR WHEN FOCUSED */}
+            {!focusedPatientId && (
+              <div className="modal-search">
+                <Search size={18} />
+                <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search patient by name..." />
+              </div>
+            )}
 
             {/* content */}
             <div className="dm-content">
               {topContent}
 
-              {patients.length > 0 && (
+              {/* IF not focused -> show patient list */}
+              {!focusedPatientId && patients.length > 0 && (
                 <div className="dm-grid">
-                  {patients.map((p) => (
-                    <div key={p.$id} className="dm-card">
-                      {/* patient header */}
-                      <div onClick={() => handleTogglePatient(p)} className="dm-card-header">
-                        <div className="dm-card-left">
-                          <div className="dm-avatar-box">
-                            {p.profile ? <img src={p.profile} alt="profile" className="dm-avatar" /> : <User size={20} />}
-                          </div>
-                          <div>
-                            <div className="dm-card-name">{p.name}</div>
-                            <div className="dm-card-sub">{p.place || "—"} • Last: {p.lastvisited || "—"}</div>
-                          </div>
+                  {patients.map((p) => renderPatientCard(p))}
+                </div>
+              )}
+
+              {/* FOCUSED VIEW */}
+              {focusedPatientId && selectedPatient && (
+                <div className="focused-panel focused-panel-animated" role="region" aria-label="Focused patient">
+                  <div className="focused-header">
+                    <button className="back-btn" onClick={closeFocusedView} aria-label="Back to list">
+                      <ArrowLeft size={16} /> Back
+                    </button>
+                    <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                      <div style={{ fontWeight: 800, fontSize: 16 }}>{selectedPatient.name}</div>
+                      <div style={{ color: "#64748b" }}>{selectedPatient.place || "—"}</div>
+                    </div>
+                    <div aria-hidden style={{ width: 60 }} />
+                  </div>
+
+                  {/* STACKED: info first, records under it */}
+                  <div className="focused-body">
+                    <div className="focused-left vertical-info">
+                      <div className="dm-avatar-wrap">
+                        <div className="dm-avatar-rel">
+                          <img src={selectedPatient.profile || "/avatar.png"} alt="avatar" className="dm-avatar-lg" />
+                          {isEditing && selectedPatient?.$id && (
+                            <div className="dm-upload-ctrl">
+                              <label className="dm-upload-label">
+                                <Camera size={14} />
+                                <input type="file" accept="image/*" onChange={(e) => handleProfileFileSelect(e.target.files)} disabled={uploadingProfile} style={{ display: "none" }} />
+                                {uploadingProfile ? "Uploading..." : "Upload"}
+                              </label>
+                            </div>
+                          )}
                         </div>
-                        <div>{expandedId === p.$id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</div>
                       </div>
 
-                      {/* expanded */}
-                      {expandedId === p.$id && (
-                        <div className="dm-expanded">
-                          {/* profile top */}
-                          <div className="dm-toprow">
-                            <div className="dm-avatar-wrap">
-                              <div className="dm-avatar-rel">
-                                <img
-                                  src={
-                                    selectedPatient && selectedPatient.$id === p.$id && editedPatient?.profilePreview
-                                      ? editedPatient.profilePreview
-                                      : p.profile || "/avatar.png"
-                                  }
-                                  alt="avatar"
-                                  className="dm-avatar-lg"
-                                />
-                                {/* Upload control visible when editing this patient */}
-                                {isEditing && selectedPatient?.$id === p.$id && (
-                                  <div className="dm-upload-ctrl">
-                                    <label className="dm-upload-label">
-                                      <Camera size={14} />
-                                      <input type="file" accept="image/*" onChange={(e) => handleProfileFileSelect(e.target.files)} disabled={uploadingProfile} style={{ display: "none" }} />
-                                      {uploadingProfile ? "Uploading..." : "Upload"}
-                                    </label>
-                                  </div>
-                                )}
-                              </div>
+                      <div className="patient-info-list">
+                        {!isEditing ? (
+                          <>
+                            <div className="patient-info-row"><div className="patient-info-label">Name</div><div className="patient-info-value">{selectedPatient.name}</div></div>
+                            <div className="patient-info-row"><div className="patient-info-label">Email</div><div className="patient-info-value">{selectedPatient.email || "—"}</div></div>
+                            <div className="patient-info-row"><div className="patient-info-label">Phone</div><div className="patient-info-value">{selectedPatient.phonenumber || "—"}</div></div>
+                            <div className="patient-info-row"><div className="patient-info-label">DOB</div><div className="patient-info-value">{selectedPatient.dateofbirth || "—"}</div></div>
+                            <div className="patient-info-row"><div className="patient-info-label">Gender</div><div className="patient-info-value">{selectedPatient.gender || "—"}</div></div>
+                            <div className="patient-info-row"><div className="patient-info-label">Blood Type</div><div className="patient-info-value">{selectedPatient.bloodtype || "—"}</div></div>
+                            <div style={{ marginTop: 10 }}>
+                              {!isEditing ? (
+                                <button onClick={() => handleStartEdit(selectedPatient)} className="dm-btn dm-btn-primary dm-btn-animated">
+                                  <Edit size={14} /> Edit Profile
+                                </button>
+                              ) : null}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="dm-edit-grid">
+                            <input value={editedPatient?.name || ""} onChange={(e) => handleInputChange("name", e.target.value)} placeholder="Full name" className="dm-input" />
+                            <div className="dm-row">
+                              <input value={editedPatient?.dateofbirth || ""} onChange={(e) => handleInputChange("dateofbirth", e.target.value)} placeholder="DOB" className="dm-input flex1" />
+                              <input value={editedPatient?.gender || ""} onChange={(e) => handleInputChange("gender", e.target.value)} placeholder="Gender" className="dm-input flex1" />
+                            </div>
+                            <div className="dm-row">
+                              <input value={editedPatient?.phonenumber || ""} onChange={(e) => handleInputChange("phonenumber", e.target.value)} placeholder="Phone (digits only)" className="dm-input flex1" />
+                              <input value={editedPatient?.email || ""} onChange={(e) => handleInputChange("email", e.target.value)} placeholder="Email" className="dm-input flex1" />
+                            </div>
+                            <input value={editedPatient?.place || ""} onChange={(e) => handleInputChange("place", e.target.value)} placeholder="Place" className="dm-input" />
+                            <div className="dm-row">
+                              <input value={editedPatient?.bloodtype || ""} onChange={(e) => handleInputChange("bloodtype", e.target.value)} placeholder="Blood Type" className="dm-input flex1" />
+                              <input value={editedPatient?.lastvisited || ""} onChange={(e) => handleInputChange("lastvisited", e.target.value)} placeholder="Last visited" className="dm-input flex1" />
                             </div>
 
-                            <div className="dm-flex1">
-                              {!isEditing || selectedPatient?.$id !== p.$id ? (
-                                <>
-                                  <div className="dm-row mb-8">
-                                    <Field icon={<Calendar size={14} />} label="DOB" value={p.dateofbirth} />
-                                    <Field icon={<Droplets size={14} />} label="Blood Type" value={p.bloodtype} />
-                                    <Field icon={<Phone size={14} />} label="Phone" value={p.phonenumber} />
-                                  </div>
+                            <div style={{ display: "grid", gap: 6 }}>
+                              <label className="dm-field-label">Password (leave empty to keep current)</label>
+                              <input
+                                type="password"
+                                value={editedPatient?.password || ""}
+                                onChange={(e) => handleInputChange("password", e.target.value)}
+                                placeholder="Set a password (optional)"
+                                className="dm-input"
+                              />
+                            </div>
 
-                                  <div className="dm-row">
-                                    <Field icon={<Mail size={14} />} label="Email" value={p.email} />
-                                    <Field icon={<MapPin size={14} />} label="Place" value={p.place} />
-                                    <Field label="Gender" value={p.gender} />
-                                  </div>
+                            <div style={{ marginTop: 8 }}>
+                              <button onClick={handleSave} className="dm-btn dm-btn-success dm-btn-animated">
+                                <Save size={14} /> Save
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setIsEditing(false);
+                                  setEditedPatient(null);
+                                }}
+                                className="dm-btn dm-btn-neutral dm-btn-animated"
+                                style={{ marginLeft: 8 }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
 
-                                  {/* NEW: Password display (masked) with reveal toggle */}
-                                  <div className="dm-row" style={{ marginTop: 8, alignItems: "center", gap: 12 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                      <div className="dm-field-label">
-                                        <Lock size={14} />
-                                        Password
-                                      </div>
-                                      <div className="dm-field-value" style={{ fontFamily: "monospace" }}>
-                                        {p.password ? (showPassword ? p.password : "••••••••") : "—"}
-                                      </div>
-                                    </div>
-                                    {p.password && (
-                                      <button
-                                        className="dm-show-pwd-btn"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setShowPassword((s) => !s);
-                                        }}
-                                        title={showPassword ? "Hide password" : "Show password"}
-                                      >
-                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      {/* RECORDS: now placed under info (still inside focused-body but below avatar/info) */}
+                      <div className="focused-right">
+                        <div className="dm-section" style={{ marginTop: 12 }}>
+                          <div className="dm-section-title">Visit / Records</div>
+                          {recordsLoading[selectedPatient.$id] && <p>Loading records…</p>}
+                          {!recordsLoading[selectedPatient.$id] &&
+                            (focusedPatientRecords.length ? (
+                              <div className="dm-records-grid">
+                                {focusedPatientRecords.map((r) => {
+                                  const isOpen = !!recordExpanded[r.$id];
+                                  return (
+                                    <div key={r.$id} className="dm-accordion accordion-animated">
+                                      <button onClick={() => toggleRecord(r.$id)} className="dm-accordion-toggle">
+                                        <div className="dm-record-head">
+                                          <div className="dm-record-head-muted">Record Date</div>
+                                          <div className="dm-record-head-date">{fmtDateOnly(r.recorddate)}</div>
+                                        </div>
+                                        <div>{isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</div>
                                       </button>
-                                    )}
-                                  </div>
-                                </>
-                              ) : (
-                                <div className="dm-edit-grid">
-                                  <input value={editedPatient?.name || ""} onChange={(e) => handleInputChange("name", e.target.value)} placeholder="Full name" className="dm-input" />
-                                  <div className="dm-row">
-                                    <input value={editedPatient?.dateofbirth || ""} onChange={(e) => handleInputChange("dateofbirth", e.target.value)} placeholder="DOB" className="dm-input flex1" />
-                                    <input value={editedPatient?.gender || ""} onChange={(e) => handleInputChange("gender", e.target.value)} placeholder="Gender" className="dm-input flex1" />
-                                  </div>
-                                  <div className="dm-row">
-                                    <input value={editedPatient?.phonenumber || ""} onChange={(e) => handleInputChange("phonenumber", e.target.value)} placeholder="Phone (digits only)" className="dm-input flex1" />
-                                    <input value={editedPatient?.email || ""} onChange={(e) => handleInputChange("email", e.target.value)} placeholder="Email" className="dm-input flex1" />
-                                  </div>
-                                  <input value={editedPatient?.place || ""} onChange={(e) => handleInputChange("place", e.target.value)} placeholder="Place" className="dm-input" />
-                                  <div className="dm-row">
-                                    <input value={editedPatient?.bloodtype || ""} onChange={(e) => handleInputChange("bloodtype", e.target.value)} placeholder="Blood Type" className="dm-input flex1" />
-                                    <input value={editedPatient?.lastvisited || ""} onChange={(e) => handleInputChange("lastvisited", e.target.value)} placeholder="Last visited" className="dm-input flex1" />
-                                  </div>
 
-                                  {/* NEW: password edit field */}
-                                  <div style={{ display: "grid", gap: 6 }}>
-                                    <label className="dm-field-label">Password (leave empty to keep current)</label>
-                                    <input
-                                      type="password"
-                                      value={editedPatient?.password || ""}
-                                      onChange={(e) => handleInputChange("password", e.target.value)}
-                                      placeholder="Set a password (optional)"
-                                      className="dm-input"
-                                    />
-                                  </div>
+                                      {isOpen && (
+                                        <div className="dm-accordion-body accordion-body-animated">
+                                          <div className="dm-detail-grid">
+                                            <div>
+                                              <div className="dm-field-label">Symptom 1</div>
+                                              <div className="dm-field-value">{r.symptom1 || "—"}</div>
+                                            </div>
+                                            <div>
+                                              <div className="dm-field-label">Symptom 2</div>
+                                              <div className="dm-field-value">{r.symptom2 || "—"}</div>
+                                            </div>
+                                            <div>
+                                              <div className="dm-field-label">Symptom 3</div>
+                                              <div className="dm-field-value">{r.symptom3 || "—"}</div>
+                                            </div>
 
-                                  {editedPatient?.profilePreview && (
-                                    <div className="dm-preview">
-                                      <div className="dm-field-label">Profile preview</div>
-                                      <img src={editedPatient.profilePreview} alt="preview" className="dm-preview-img" />
+                                            {r.summary && (
+                                              <div className="dm-summary">
+                                                <div className="dm-field-label">Summary</div>
+                                                <div className="dm-field-value">{r.summary}</div>
+                                              </div>
+                                            )}
+
+                                            {r.image && (
+                                              <div className="dm-image-wrap">
+                                                <a href={r.image} target="_blank" rel="noreferrer">
+                                                  <img src={r.image} alt="record" className="dm-record-img record-img-fade" />
+                                                </a>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p>No records found for this patient.</p>
+                            ))}
+                        </div>
+
+                        <div className="dm-section" style={{ marginTop: 12 }}>
+                          <div className="dm-section-title">Hospital Records</div>
+                          <div className="dm-hosp-list">
+                            {STATIC_HOSPITALS.map((h) => (
+                              <div key={h} className="dm-hosp-row">
+                                <div className="dm-hosp-left">
+                                  <div className="dm-iconbox">
+                                    <FileText size={18} color="#0f172a" />
+                                  </div>
+                                  <div className="dm-hosp-name">{h}</div>
                                 </div>
-                              )}
-
-                              <div className="dm-actions">
-                                {!isEditing || selectedPatient?.$id !== p.$id ? (
-                                  <button onClick={() => handleStartEdit(p)} className="dm-btn dm-btn-primary">
-                                    <Edit size={14} /> Edit Profile
-                                  </button>
-                                ) : (
-                                  <>
-                                    <button onClick={handleSave} className="dm-btn dm-btn-success">
-                                      <Save size={14} /> Save
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setIsEditing(false);
-                                        setEditedPatient(null);
-                                      }}
-                                      className="dm-btn dm-btn-neutral"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </>
-                                )}
-
-                                {/* NEW: Refresh records button */}
-                                <button
-                                  title="Refresh records for this patient"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    fetchRecordsForPatient(p.$id, p.name, { showToasts: true });
-                                  }}
-                                  className="dm-btn dm-btn-ghost"
-                                  style={{ marginLeft: 8 }}
-                                >
-                                  <RefreshCw size={14} /> Refresh Records
+                                <button className="dm-request-btn" onClick={(e) => e.stopPropagation()}>
+                                  <Lock size={16} />
+                                  Request Access
                                 </button>
                               </div>
-                            </div>
-                          </div>
-
-                          {/* records accordion */}
-                          <div className="dm-section">
-                            <div className="dm-section-title">Visit / Records</div>
-                            {recordsLoading[p.$id] && <p>Loading records…</p>}
-                            {!recordsLoading[p.$id] &&
-                              (recordsByPatient[p.$id]?.length ? (
-                                <div className="dm-records-grid">
-                                  {recordsByPatient[p.$id].map((r) => {
-                                    const isOpen = !!recordExpanded[r.$id];
-                                    return (
-                                      <div key={r.$id} className="dm-accordion">
-                                        <button onClick={() => toggleRecord(r.$id)} className="dm-accordion-toggle">
-                                          <div className="dm-record-head">
-                                            <div className="dm-record-head-muted">Record Date</div>
-                                            <div className="dm-record-head-date">{fmtDateOnly(r.recorddate)}</div>
-                                          </div>
-                                          <div>{isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</div>
-                                        </button>
-
-                                        {isOpen && (
-                                          <div className="dm-accordion-body">
-                                            <div className="dm-detail-grid">
-                                              <div>
-                                                <div className="dm-field-label">Symptom 1</div>
-                                                <div className="dm-field-value">{r.symptom1 || "—"}</div>
-                                              </div>
-                                              <div>
-                                                <div className="dm-field-label">Symptom 2</div>
-                                                <div className="dm-field-value">{r.symptom2 || "—"}</div>
-                                              </div>
-                                              <div>
-                                                <div className="dm-field-label">Symptom 3</div>
-                                                <div className="dm-field-value">{r.symptom3 || "—"}</div>
-                                              </div>
-
-                                              {r.summary && (
-                                                <div className="dm-summary">
-                                                  <div className="dm-field-label">Summary</div>
-                                                  <div className="dm-field-value">{r.summary}</div>
-                                                </div>
-                                              )}
-
-                                              {r.image && (
-                                                <div className="dm-image-wrap">
-                                                  <a href={r.image} target="_blank" rel="noreferrer">
-                                                    <img src={r.image} alt="record" className="dm-record-img" />
-                                                  </a>
-                                                </div>
-                                              )}
-                                            </div>
-                                          </div>
-                                        )}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              ) : (
-                                <p>No records found for this patient.</p>
-                              ))}
-                          </div>
-
-                          {/* Hospital UI */}
-                          <div className="dm-section">
-                            <div className="dm-section-title">Hospital Records</div>
-                            <div className="dm-hosp-list">
-                              {STATIC_HOSPITALS.map((h) => (
-                                <div key={h} className="dm-hosp-row">
-                                  <div className="dm-hosp-left">
-                                    <div className="dm-iconbox">
-                                      <FileText size={18} color="#0f172a" />
-                                    </div>
-                                    <div className="dm-hosp-name">{h}</div>
-                                  </div>
-                                  <button className="dm-request-btn" onClick={(e) => e.stopPropagation()}>
-                                    <Lock size={16} />
-                                    Request Access
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
+                            ))}
                           </div>
                         </div>
-                      )}
+                      </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -815,11 +767,50 @@ const DownloadModal = ({ setShowDownloadModal }) => {
         ))}
       </div>
 
+      {/* Animations + vertical info tweaks (inline so nothing else changes) */}
       <style>{`
-        @keyframes toastIn {
-          from { transform: translateY(-6px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
+        /* Modal entrance */
+        .modal-animated { animation: modalScaleIn 220ms cubic-bezier(.2,.9,.3,1); }
+        @keyframes modalScaleIn {
+          0% { transform: translateY(8px) scale(.995); opacity: 0; }
+          100% { transform: translateY(0) scale(1); opacity: 1; }
         }
+
+        /* patient cards */
+        .card-animated { animation: cardIn .22s ease both; cursor: pointer; }
+        @keyframes cardIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .card-animated:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(2,6,23,0.06); transition: transform .18s, box-shadow .18s; }
+
+        /* focused panel slide */
+        .focused-panel-animated { animation: focusedIn .22s cubic-bezier(.2,.9,.3,1); border-radius: 8px; }
+        @keyframes focusedIn { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* back button */
+        .back-btn { display: inline-flex; align-items: center; gap: 8px; border-radius: 8px; padding: 8px 10px; background: #fff; border: 1px solid #e6eef8; cursor: pointer; transition: transform .12s; }
+        .back-btn:hover { transform: translateX(-4px); box-shadow: 0 8px 22px rgba(2,6,23,0.06); }
+
+        /* accordion animation */
+        .accordion-animated { transition: transform .12s, box-shadow .12s; }
+        .accordion-body-animated { animation: accordionFade .18s ease both; }
+        @keyframes accordionFade { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* record image fade */
+        .record-img-fade { animation: imageFadeIn .28s ease-out both; border-radius: 6px; }
+        @keyframes imageFadeIn { from { opacity: 0; transform: scale(.995); } to { opacity: 1; transform: scale(1); } }
+
+        /* focused body now stacked vertically */
+        .focused-body { display: flex; flex-direction: column; gap: 18px; margin-top: 14px; }
+        .focused-left { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        .focused-right { width: 100%; }
+
+        .patient-info-list { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+        .patient-info-row { display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; border-radius: 8px; background: #fff; border: 1px solid #f1f5f9; }
+        .patient-info-label { color: #64748b; font-size: 12px; font-weight: 600; }
+        .patient-info-value { font-weight: 700; font-size: 14px; color: #0f172a; }
+
+        .dm-input:focus, .dm-accordion-toggle:focus, .back-btn:focus { outline: 3px solid rgba(37,99,235,0.08); }
+
+        @keyframes toastIn { from { transform: translateY(-6px) scale(.995); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
       `}</style>
     </>
   );
