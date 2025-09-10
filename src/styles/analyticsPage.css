@@ -1042,4 +1042,123 @@ x
   margin-left: auto;
   font-weight: 700;
   font-size: 12px;
+  .back-home {
+  position: sticky;
+  top: 12px;            /* distance from the top of the viewport/header */
+  z-index: 9999;        /* above page content */
+  display: flex;
+  justify-content: flex-start; /* align left — change to center/right if you prefer */
+  padding: 6px 0;
 }
+
+/* Style the button to blend with your existing .btn.btn-primary look but slightly smaller */
+.back-home .btn.btn-primary {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  box-shadow: 0 6px 18px rgba(2,6,23,0.08);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+/* subtle hover */
+.back-home .btn.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(2,6,23,0.12);
+}
+}
+/* Mobile */
+@media (max-width: 640px) {
+  html, body {
+    height: auto;         /* let body grow naturally */
+    overflow: auto;       /* allow scroll on page */
+  }
+
+  .analytics-root {
+    height: auto;         /* don't lock height */
+    padding: 10px;
+  }
+
+  .header .title {
+    font-size: 22px;
+  }
+
+  .main-grid {
+    grid-template-columns: 1fr; /* stack columns */
+    gap: 10px;
+  }
+
+  .col-1, .col-2, .col-3 {
+    max-width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    order: unset; /* natural stacking */
+  }
+
+  .overview-box,
+  .card,
+  .card-box {
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+
+  /* Fix header wrapping */
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .slider-container {
+    min-width: auto;
+    width: 100%;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  input[type="range"].big-range {
+    width: 100%;
+  }
+
+  /* Pie chart cards shrink */
+  .pie-card {
+    width: 100%;
+    min-height: 200px;
+  }
+  .pie-card:hover {
+    width: 100%; /* disable hover expand on mobile */
+    box-shadow: 0 6px 18px rgba(2, 6, 23, 0.12);
+  }
+  .pie-card:hover .piechart-legend {
+    display: none; /* hide legend hover for mobile */
+  }
+    .back-home {
+    position: fixed;
+    top: 12px;
+    left: 12px;          /* change to right:12px if you want it on the right */
+    z-index: 11000;
+    background: transparent;
+    padding: 0;
+  }
+
+  /* Make sure header content won't be overlapped by the fixed back button on mobile */
+  .header, .analytics-header, .header-content {
+    padding-top: 56px; /* create breathing room for the fixed button */
+  }
+
+  /* Slightly smaller button on mobile so it doesn't dominate the view */
+  .back-home .btn.btn-primary {
+    padding: 8px 10px;
+    font-size: 14px;
+    border-radius: 8px;
+  }
+
+}
+/* Keep the back button visible on top of the page without affecting desktop layout */
+
+
+
+
