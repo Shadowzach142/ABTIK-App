@@ -10,7 +10,7 @@ html, body {
 /* root */
 .analytics-root {
   height: 100vh; /* fill viewport */
-  padding: 18px;
+  padding: 2px;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -564,10 +564,15 @@ input[type="range"].big-range::-webkit-slider-thumb {
   border-radius: 2px;
 }
 
+.back-button {
+  text-align: right;
+}
+
+
 /* back button area */
 .back-home {
   margin-top: 15px;
-  text-align: center;
+  text-align: right;
 }
 
 /* center column */
@@ -1090,7 +1095,7 @@ x
 
 /* ensure header content not hidden behind the button */
 .header, .analytics-header, .header-content {
-  padding-top: 56px; /* adjust if your header is taller */
+  padding-top: 20px;
 }
 
 
@@ -1132,9 +1137,11 @@ x
   /* Fix header wrapping */
   .header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
     gap: 6px;
   }
+
+
 
   .slider-container {
     min-width: auto;

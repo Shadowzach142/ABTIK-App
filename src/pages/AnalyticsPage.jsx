@@ -676,25 +676,19 @@ const AnalyticsPage = ({ setCurrentPage }) => {
               }
               className="big-range"
             />
-               </div></div>
-
-
-
+            <div className="back-button">
+              <button className="btn btn-primary" onClick={() => setCurrentPage ? setCurrentPage('landing') : (window.location.href = '/')}>
+                Home
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-<div className="back-home">
-  <button className="btn btn-primary back-btn" onClick={() => setCurrentPage ? setCurrentPage('landing') : (window.location.href = '/')}>
-    Return to Home
-  </button>
-
   </div>
-</div>    
 </div> {/* END OF HEADER */}
-
     <>
-
-      <div className=""></div>
-
+    <div className=""></div>
       <div className="main-grid">
         <div className="col-1">
             <div className="card-header">
@@ -717,7 +711,6 @@ const AnalyticsPage = ({ setCurrentPage }) => {
                 )}
               </div>
             </div>
-
 
           <div className="overview-box">
             <div className="top-symptoms-box">
