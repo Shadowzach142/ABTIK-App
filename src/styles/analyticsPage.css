@@ -1042,22 +1042,40 @@ x
   margin-left: auto;
   font-weight: 700;
   font-size: 12px;
-  .back-home {
-  position: sticky;
-  top: 12px;            /* distance from the top of the viewport/header */
-  z-index: 9999;        /* above page content */
-  display: flex;
-  justify-content: flex-start; /* align left — change to center/right if you prefer */
-  padding: 6px 0;
 }
 
-/* Style the button to blend with your existing .btn.btn-primary look but slightly smaller */
+/* ---------- Back button: stick on desktop, fixed on mobile ---------- */
+.back-home {
+  position: sticky;
+  top: 12px;
+  z-index: 11000;
+  display: flex;
+  justify-content: flex-start;
+  padding: 6px 0;
+  pointer-events: auto;
+}
+
+.back-home {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 13000;            /* very high so nothing covers it */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  background: transparent;
+  padding: 0;
+}
+
+/* Button look (keeps original btn-primary style but slightly smaller) */
 .back-home .btn.btn-primary {
   background: #007bff;
   color: #fff;
   border: none;
-  padding: 8px 12px;
-  border-radius: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
   cursor: pointer;
   font-weight: 600;
   box-shadow: 0 6px 18px rgba(2,6,23,0.08);
@@ -1069,7 +1087,13 @@ x
   transform: translateY(-2px);
   box-shadow: 0 10px 24px rgba(2,6,23,0.12);
 }
+
+/* ensure header content not hidden behind the button */
+.header, .analytics-header, .header-content {
+  padding-top: 56px; /* adjust if your header is taller */
 }
+
+
 /* Mobile */
 @media (max-width: 640px) {
   html, body {
@@ -1135,26 +1159,18 @@ x
   .pie-card:hover .piechart-legend {
     display: none; /* hide legend hover for mobile */
   }
-    .back-home {
-    position: fixed;
-    top: 12px;
-    left: 12px;          /* change to right:12px if you want it on the right */
-    z-index: 11000;
-    background: transparent;
+  .back-home {
+    top: 10px;
     padding: 0;
   }
-
-  /* Make sure header content won't be overlapped by the fixed back button on mobile */
-  .header, .analytics-header, .header-content {
-    padding-top: 56px; /* create breathing room for the fixed button */
-  }
-
-  /* Slightly smaller button on mobile so it doesn't dominate the view */
   .back-home .btn.btn-primary {
-    padding: 8px 10px;
+    padding: 6px 10px;
     font-size: 14px;
     border-radius: 8px;
+    min-width: 88px;
   }
+
+  /* On mobile, prevent the hover-expansion behavior on any other elements that might overlap */
 
 }
 /* Keep the back button visible on top of the page without affecting desktop layout */

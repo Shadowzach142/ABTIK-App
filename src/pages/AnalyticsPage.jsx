@@ -682,11 +682,13 @@ const AnalyticsPage = ({ setCurrentPage }) => {
 
       </div>
     </div>
+<div className="back-home">
+  <button className="btn btn-primary back-btn" onClick={() => setCurrentPage ? setCurrentPage('landing') : (window.location.href = '/')}>
+    Return to Home
+  </button>
 
-    <button className="btn btn-primary" onClick={() => window.location.href = '/'}>
-      Return to Home
-    </button>
   </div>
+</div>    
 </div> {/* END OF HEADER */}
 
     <>
